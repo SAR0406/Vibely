@@ -51,12 +51,12 @@ export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
+    if (scrollViewportRef.current) {
+      scrollViewportRef.current.scrollTo({
+        top: scrollViewportRef.current.scrollHeight,
         behavior: 'smooth',
       });
     }
@@ -122,7 +122,7 @@ export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate
       </header>
 
       <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full" viewportRef={scrollAreaRef}>
+        <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
           <div className="p-4 md:p-8 space-y-6">
             {messages.map((message) => {
               const author = allUsers.find((u) => u.id === message.authorId);
