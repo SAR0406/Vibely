@@ -54,7 +54,7 @@ export function ChatMessage({ message, author, isSender }: MessageProps) {
       >
         <div
           className={cn(
-            'rounded-lg p-3 text-sm shadow-md',
+            'rounded-xl p-3 text-sm',
             isSender
               ? 'rounded-br-none bg-primary text-primary-foreground'
               : 'rounded-bl-none bg-card'
@@ -63,7 +63,7 @@ export function ChatMessage({ message, author, isSender }: MessageProps) {
           <p
             className={cn('font-headline text-xs font-bold mb-1', {
               'text-primary-foreground/80': isSender,
-              'text-primary': !isSender,
+              'text-muted-foreground': !isSender,
             })}
           >
             {author.name}
@@ -72,7 +72,7 @@ export function ChatMessage({ message, author, isSender }: MessageProps) {
         </div>
         <div
           className={cn(
-            'mt-1 flex items-center gap-1 text-xs text-muted-foreground',
+            'mt-1 flex items-center gap-1 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity',
             { 'flex-row-reverse': isSender }
           )}
         >

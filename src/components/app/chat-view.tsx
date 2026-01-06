@@ -31,15 +31,15 @@ function AvatarGroup({ userIds }: { userIds: string[] }) {
   return (
     <div className="flex -space-x-2 overflow-hidden">
       {displayedUsers.slice(0, 3).map((user) => (
-        <Avatar key={user.id} className="inline-block size-6 ring-2 ring-background">
+        <Avatar key={user.id} className="inline-block size-8 border-2 border-background">
           <AvatarImage asChild src={user.avatarUrl}>
-             <Image src={user.avatarUrl} alt={user.name} width={24} height={24} className="object-cover" />
+             <Image src={user.avatarUrl} alt={user.name} width={32} height={32} className="object-cover" />
           </AvatarImage>
           <AvatarFallback>{user.name[0]}</AvatarFallback>
         </Avatar>
       ))}
       {displayedUsers.length > 3 && (
-        <Avatar className="relative flex h-6 w-6 items-center justify-center rounded-full bg-muted ring-2 ring-background">
+        <Avatar className="relative flex size-8 items-center justify-center rounded-full border-2 border-background bg-muted">
           <span className="text-xs font-medium">+{userIds.length - 3}</span>
         </Avatar>
       )}
@@ -87,31 +87,45 @@ export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate
 
   if (!channel) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-background/50 text-center">
-        <div className="p-8">
-          <h2 className="font-headline text-2xl font-semibold">
-            Welcome to Vibely
-          </h2>
-          <p className="mt-2 text-muted-foreground">
-            Select a channel to start chatting, or create a new one to begin a
-            new conversation.
-          </p>
-        </div>
-      </div>
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.3 }}
+          className="flex h-full flex-col items-center justify-center bg-background/50 text-center"
+        >
+          <div className="p-8">
+            <h2 className="font-headline text-2xl font-semibold">
+              Welcome to Vibely
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              Select a channel to start chatting, or create a new one to begin a
+              new conversation.
+            </p>
+          </div>
+        </motion.div>
+      </AnimatePresence>
     );
   }
 
   const typingUsers = allUsers.filter(u => u.id !== 'user-5' && u.online).slice(0,2);
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b p-4">
-        <div className="flex items-center gap-3">
+    <motion.div
+      key={channel.id}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="flex h-full flex-col bg-background"
+    >
+      <header className="flex h-16 shrink-0 items-center justify-between border-b p-4">
+        <div className="flex items-center gap-4">
           <AvatarGroup userIds={channel.members} />
           <div>
             <h2 className="font-headline text-lg font-semibold">{channel.name}</h2>
-            <p className="text-xs text-muted-foreground">
-              {channel.members.length} members
+            <p className="text-sm text-muted-foreground">
+              {channel.description}
             </p>
           </div>
         </div>
@@ -124,23 +138,29 @@ export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
           <div className="p-4 md:p-8 space-y-6">
-            {messages.map((message) => {
+            {messages.map((message, index) => {
               const author = allUsers.find((u) => u.id === message.authorId);
               if (!author) return null;
               return (
-                <ChatMessage
+                <motion.div
                   key={message.id}
-                  message={message}
-                  author={author}
-                  isSender={message.authorId === 'user-5'}
-                />
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
+                  <ChatMessage
+                    message={message}
+                    author={author}
+                    isSender={message.authorId === 'user-5'}
+                  />
+                </motion.div>
               );
             })}
           </div>
         </ScrollArea>
       </div>
 
-      <footer className="p-4 border-t">
+      <footer className="p-4 border-t bg-background">
         <div className="h-6 px-2 text-sm text-muted-foreground">
           <AnimatePresence>
             {isTyping && (
@@ -161,8 +181,8 @@ export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate
           onSubmit={handleSendMessage}
           className="flex w-full items-center gap-2"
         >
-          <Button variant="ghost" size="icon" type="button">
-            <Paperclip className="size-5" />
+          <Button variant="ghost" size="icon" type="button" className="hover:bg-muted">
+            <Paperclip className="size-5 text-muted-foreground" />
              <span className="sr-only">Attach file</span>
           </Button>
           <div className="relative flex-1">
@@ -170,20 +190,20 @@ export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate
               value={inputValue}
               onChange={handleInputChange}
               placeholder="Type a message..."
-              className="pr-10"
+              className="rounded-full bg-muted pr-10"
             />
             <Button
               variant="ghost"
               size="icon"
               type="button"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-muted/50"
             >
-              <Smile className="size-5" />
+              <Smile className="size-5 text-muted-foreground" />
               <span className="sr-only">Add emoji</span>
             </Button>
           </div>
 
-          <Button type="submit" size="icon" disabled={!inputValue.trim()}>
+          <Button type="submit" size="icon" disabled={!inputValue.trim()} className="rounded-full">
             <Send className="size-5" />
             <span className="sr-only">Send message</span>
           </Button>
@@ -195,6 +215,6 @@ export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate
         onOpenChange={setIsSettingsOpen}
         onAutomationsUpdate={onAutomationsUpdate}
       />
-    </div>
+    </motion.div>
   );
 }
