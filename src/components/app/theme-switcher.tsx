@@ -26,7 +26,7 @@ export function ThemeSwitcher() {
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
   return (
-    <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-muted/50 p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent">
+    <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-muted p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="ghost" size="icon" onClick={toggleDarkMode}>

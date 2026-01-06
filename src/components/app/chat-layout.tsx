@@ -28,7 +28,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useAuth, useUser, useDoc, useFirestore, useCollection } from '@/firebase';
+import { useAuth, useUser, useDoc, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
@@ -52,7 +52,7 @@ function useChannels() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const channelsQuery = useMemo(() => {
+  const channelsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'channels'),
@@ -75,7 +75,7 @@ export default function ChatLayout() {
 
   const { data: channels, isLoading: channelsLoading } = useChannels();
 
-  const userDocRef = useMemo(() => {
+  const userDocRef = useMemoFirebase(() => {
     if (!user) return null;
     return doc(firestore, 'users', user.uid);
   }, [user, firestore]);
@@ -132,7 +132,7 @@ export default function ChatLayout() {
           <Sidebar
             variant="inset"
             collapsible="icon"
-            className="border-r border-border/20"
+            className="border-r"
           >
             <SidebarHeader className="h-16 items-center justify-center p-0">
               <Link href="/">
@@ -205,7 +205,7 @@ export default function ChatLayout() {
 
               <div className="flex flex-col gap-2 items-center group-data-[collapsible=expanded]:items-stretch">
                 <ThemeSwitcher />
-                <div className="flex items-center gap-3 rounded-lg p-2 transition-colors duration-200 hover:bg-muted/50 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:justify-center">
+                <div className="flex items-center gap-3 rounded-lg p-2 transition-colors duration-200 hover:bg-muted group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:justify-center">
                   {currentUser && (
                     <>
                       <UserAvatar
@@ -244,7 +244,7 @@ export default function ChatLayout() {
             </SidebarFooter>
           </Sidebar>
 
-          <SidebarInset className="max-h-screen overflow-hidden bg-muted/30">
+          <SidebarInset className="bg-muted/40">
             <header className="absolute left-4 top-4 z-20">
               <SidebarTrigger />
             </header>

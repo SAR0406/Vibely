@@ -204,13 +204,15 @@ export default function SignupPage() {
       }
       
       // For GitHub or returning Google users, create their profile immediately
-      createFirestoreUser(
-        socialUser.uid,
-        socialUser.email!,
-        socialUser.displayName || socialUser.email!.split('@')[0],
-        socialUser.displayName?.replace(/\s+/g, '').toLowerCase() || socialUser.email!.split('@')[0],
-        socialUser.photoURL
-      );
+      if(isNewUser) {
+        createFirestoreUser(
+          socialUser.uid,
+          socialUser.email!,
+          socialUser.displayName || socialUser.email!.split('@')[0],
+          socialUser.displayName?.replace(/\s+/g, '').toLowerCase() || socialUser.email!.split('@')[0],
+          socialUser.photoURL
+        );
+      }
       // Auth listener will redirect to /chat
     } catch (error) {
       handleAuthError(error);
@@ -288,7 +290,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <div className="w-full max-w-md">
         <Card className="rounded-2xl shadow-2xl shadow-black/10">
           <CardHeader className="text-center">
@@ -407,7 +409,7 @@ export default function SignupPage() {
                     <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
+                    <span className="bg-card px-2 text-muted-foreground">
                         Or continue with
                     </span>
                     </div>
