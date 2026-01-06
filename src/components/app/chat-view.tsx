@@ -19,6 +19,7 @@ import Image from 'next/image';
 type ChatViewProps = {
   channel: Channel | null;
   messages: Message[];
+  currentUser: User | null;
   onSendMessage: (content: string) => void;
   onAutomationsUpdate: (channelId: string, updatedAutomations: any) => void;
 };
@@ -47,7 +48,7 @@ function AvatarGroup({ userIds }: { userIds: string[] }) {
   );
 }
 
-export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate }: ChatViewProps) {
+export function ChatView({ channel, messages, currentUser, onSendMessage, onAutomationsUpdate }: ChatViewProps) {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -109,7 +110,7 @@ export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate
     );
   }
 
-  const typingUsers = allUsers.filter(u => u.id !== 'user-5' && u.online).slice(0,2);
+  const typingUsers = allUsers.filter(u => u.id !== currentUser?.id && u.online).slice(0,2);
 
   return (
     <motion.div
@@ -139,7 +140,7 @@ export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
           <div className="p-4 md:p-8 space-y-6">
             {messages.map((message, index) => {
-              const author = allUsers.find((u) => u.id === message.authorId);
+              const author = allUsers.find((u) => u.id === message.authorId) || staticUsers.find(u => u.name === 'You');
               if (!author) return null;
               return (
                 <motion.div
@@ -151,7 +152,7 @@ export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate
                   <ChatMessage
                     message={message}
                     author={author}
-                    isSender={message.authorId === 'user-5'}
+                    isSender={message.authorId === currentUser?.id}
                   />
                 </motion.div>
               );
@@ -163,7 +164,7 @@ export function ChatView({ channel, messages, onSendMessage, onAutomationsUpdate
       <footer className="p-4 border-t bg-background">
         <div className="h-6 px-2 text-sm text-muted-foreground">
           <AnimatePresence>
-            {isTyping && (
+            {isTyping && typingUsers.length > 0 && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}

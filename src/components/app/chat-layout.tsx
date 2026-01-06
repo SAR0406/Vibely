@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -17,14 +17,16 @@ import {
   MessageSquare,
   PlusCircle,
   Users,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-import type { Channel, Message, User, Automation } from '@/lib/types';
+import type { Channel, Message, Automation, User as UserType } from '@/lib/types';
 import {
   channels as initialChannels,
   messages as initialMessages,
-  users,
+  users as staticUsers,
 } from '@/lib/data';
 import { ChatView } from './chat-view';
 import { UserAvatar } from './user-avatar';
@@ -37,6 +39,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useAuth, useUser, useDoc, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
@@ -62,7 +66,30 @@ export default function ChatLayout() {
   );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const currentUser = users.find((u) => u.id === 'user-5') as User;
+  const auth = useAuth();
+  const { user } = useUser();
+  const router = useRouter();
+  const firestore = useFirestore();
+
+  const userDocRef = useMemo(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const { data: currentUserProfile } = useDoc<UserType>(userDocRef);
+
+  const currentUser = useMemo(() => {
+    if (!user || !currentUserProfile) {
+      // Return a default/guest user object or null
+      return staticUsers.find(u => u.id === 'user-5');
+    }
+    return {
+      id: user.uid,
+      name: currentUserProfile.fullName || 'User',
+      avatarUrl: currentUserProfile.avatarUrl || '',
+      online: true,
+    };
+  }, [user, currentUserProfile]);
 
   const selectedChannel = useMemo(
     () => channels.find((c) => c.id === selectedChannelId),
@@ -80,11 +107,11 @@ export default function ChatLayout() {
   };
 
   const handleSendMessage = (content: string) => {
-    if (!selectedChannelId) return;
+    if (!selectedChannelId || !currentUser) return;
     const newMessage: Message = {
       id: `msg-${Date.now()}`,
       channelId: selectedChannelId,
-      authorId: 'user-5',
+      authorId: currentUser.id,
       content,
       timestamp: new Date().toISOString(),
       readStatus: 'sent',
@@ -101,6 +128,11 @@ export default function ChatLayout() {
         c.id === channelId ? { ...c, automations: updatedAutomations } : c
       )
     );
+  };
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/login');
   };
 
   const publicChannels = channels.filter((c) => c.type === 'public');
@@ -187,15 +219,27 @@ export default function ChatLayout() {
               <div className="flex flex-col gap-2 items-center group-data-[collapsible=expanded]:items-stretch">
                 <ThemeSwitcher />
                 <div className="flex items-center gap-3 rounded-lg p-2 transition-colors duration-200 hover:bg-muted/50 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:justify-center">
-                  <UserAvatar
-                    src={currentUser.avatarUrl}
-                    name={currentUser.name}
-                    isOnline
-                  />
-                  <div className="flex-1 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-semibold">{currentUser.name}</p>
-                    <p className="text-xs text-muted-foreground">Online</p>
-                  </div>
+                  {currentUser && (
+                    <>
+                      <UserAvatar
+                        src={currentUser.avatarUrl}
+                        name={currentUser.name}
+                        isOnline
+                      />
+                      <div className="flex-1 group-data-[collapsible=icon]:hidden">
+                        <p className="text-sm font-semibold">{currentUser.name}</p>
+                        <p className="text-xs text-muted-foreground">Online</p>
+                      </div>
+                       <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" onClick={handleLogout} className="group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10">
+                            <LogOut className="size-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="group-data-[collapsible=icon]:block hidden">Logout</TooltipContent>
+                       </Tooltip>
+                    </>
+                  )}
                 </div>
               </div>
             </SidebarFooter>
@@ -207,6 +251,7 @@ export default function ChatLayout() {
             </header>
             <ChatView
               key={selectedChannelId}
+              currentUser={currentUser || null}
               channel={selectedChannel || null}
               messages={channelMessages}
               onSendMessage={handleSendMessage}

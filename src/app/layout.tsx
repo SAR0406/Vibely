@@ -4,6 +4,8 @@ import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/hooks/use-theme';
+import { FirebaseClientProvider } from '@/firebase';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 const fontLora = Lora({
   subsets: ['latin'],
@@ -48,7 +50,10 @@ export default function RootLayout({
         )}
       >
         <ThemeProvider>
-          {children}
+          <FirebaseClientProvider>
+            <FirebaseErrorListener />
+            {children}
+          </FirebaseClientProvider>
           <Toaster />
         </ThemeProvider>
       </body>

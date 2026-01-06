@@ -87,7 +87,7 @@ export function ChatMessage({ message, author, isSender }: MessageProps) {
             </Tooltip>
           </TooltipProvider>
 
-          {isSender && (
+          {isSender && message.readStatus && (
             <ReadStatusIcon
               className={cn('size-4', {
                 'text-blue-500': message.readStatus === 'read',

@@ -3,6 +3,10 @@ export type User = {
   name: string;
   avatarUrl: string;
   online: boolean;
+  // Fields from firestore
+  fullName?: string;
+  username?: string;
+  email?: string;
 };
 
 export type Message = {
@@ -11,7 +15,7 @@ export type Message = {
   authorId: string;
   content: string;
   timestamp: string;
-  readStatus: 'sent' | 'delivered' | 'read';
+  readStatus: 'sent' | 'delivered' | 'read' | null;
 };
 
 export type Channel = {
