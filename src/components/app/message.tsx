@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Check, CheckCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -19,10 +20,20 @@ type MessageProps = {
 };
 
 export function ChatMessage({ message, author, isSender }: MessageProps) {
+  const [formattedTimestamp, setFormattedTimestamp] = useState('');
+  const [fullTimestamp, setFullTimestamp] = useState('');
+  
+  useEffect(() => {
+    if (message.timestamp) {
+      const date = new Date(message.timestamp);
+      setFormattedTimestamp(format(date, 'p'));
+      setFullTimestamp(format(date, 'PPpp'));
+    }
+  }, [message.timestamp]);
+
+
   const ReadStatusIcon =
     message.readStatus === 'read' ? CheckCheck : Check;
-
-  const timestamp = format(new Date(message.timestamp), 'p');
 
   return (
     <div
@@ -68,10 +79,10 @@ export function ChatMessage({ message, author, isSender }: MessageProps) {
           <TooltipProvider delayDuration={100}>
             <Tooltip>
               <TooltipTrigger>
-                <span>{timestamp}</span>
+                <span>{formattedTimestamp}</span>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{format(new Date(message.timestamp), 'PPpp')}</p>
+                <p>{fullTimestamp}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
