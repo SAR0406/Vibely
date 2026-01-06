@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -14,16 +14,11 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import {
-  ChevronsRight,
   MessageSquare,
   PlusCircle,
   Users,
-  Settings,
-  Palette,
-  Sun,
-  Moon,
 } from 'lucide-react';
-import { useTheme } from '@/hooks/use-theme';
+import Link from 'next/link';
 
 import type { Channel, Message, User, Automation } from '@/lib/types';
 import {
@@ -36,13 +31,28 @@ import { UserAvatar } from './user-avatar';
 import { CreateChannelDialog } from './create-channel-dialog';
 import { Button } from '../ui/button';
 import { ThemeSwitcher } from './theme-switcher';
-import { cn } from '@/lib/utils';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+
+const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="m6 17 5-5-5-5" />
+      <path d="m13 17 5-5-5-5" />
+    </svg>
+  );
 
 export default function ChatLayout() {
   const [channels, setChannels] = useState<Channel[]>(initialChannels);
@@ -51,7 +61,6 @@ export default function ChatLayout() {
     'channel-1'
   );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const { theme, setTheme, isDarkMode, toggleDarkMode } = useTheme();
 
   const currentUser = users.find((u) => u.id === 'user-5') as User;
 
@@ -71,9 +80,10 @@ export default function ChatLayout() {
   };
 
   const handleSendMessage = (content: string) => {
+    if (!selectedChannelId) return;
     const newMessage: Message = {
       id: `msg-${Date.now()}`,
-      channelId: selectedChannelId!,
+      channelId: selectedChannelId,
       authorId: 'user-5',
       content,
       timestamp: new Date().toISOString(),
@@ -106,7 +116,9 @@ export default function ChatLayout() {
             className="border-r border-border/20"
           >
             <SidebarHeader className="h-16 items-center justify-center p-0">
-              <ChevronsRight className="size-8 text-primary" />
+                <Link href="/">
+                    <ChevronsRight className="size-8 text-primary" />
+                </Link>
             </SidebarHeader>
             <SidebarContent className="p-2">
               <div className="flex flex-col gap-4">
