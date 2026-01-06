@@ -18,9 +18,8 @@ import {
   MessageSquare,
   PlusCircle,
   Users,
-  Sun,
-  Moon,
 } from 'lucide-react';
+import { useTheme } from '@/hooks/use-theme';
 
 import type { Channel, Message, User, Automation } from '@/lib/types';
 import {
@@ -32,6 +31,7 @@ import { ChatView } from './chat-view';
 import { UserAvatar } from './user-avatar';
 import { CreateChannelDialog } from './create-channel-dialog';
 import { Button } from '../ui/button';
+import { ThemeSwitcher } from './theme-switcher';
 
 export default function ChatLayout() {
   const [channels, setChannels] = useState<Channel[]>(initialChannels);
@@ -40,17 +40,10 @@ export default function ChatLayout() {
     'channel-1'
   );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const { theme, setTheme, isDarkMode, toggleDarkMode } = useTheme();
+
 
   const currentUser = users.find((u) => u.id === 'user-5') as User;
-  
-  useEffect(() => {
-    if (isDarkTheme) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkTheme]);
 
   const selectedChannel = useMemo(
     () => channels.find((c) => c.id === selectedChannelId),
@@ -157,9 +150,9 @@ export default function ChatLayout() {
                 <p className="text-sm font-semibold">{currentUser.name}</p>
                 <p className="text-xs text-muted-foreground">Online</p>
               </div>
-               <Button variant="ghost" size="icon" onClick={() => setIsDarkTheme(!isDarkTheme)} className="group-data-[collapsible=icon]:hidden">
-                {isDarkTheme ? <Sun className="size-4" /> : <Moon className="size-4" />}
-              </Button>
+               <div className="group-data-[collapsible=icon]:hidden">
+                <ThemeSwitcher />
+               </div>
             </div>
           </SidebarFooter>
         </Sidebar>

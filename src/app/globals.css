@@ -4,6 +4,11 @@
 
 @layer base {
   :root {
+    --radius: 0.75rem;
+  }
+
+  /* Default Vibely Theme */
+  .vibely {
     --background: 25 100% 97%;
     --foreground: 25 10% 20%;
     --card: 0 0% 100%;
@@ -28,9 +33,9 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.75rem;
   }
-  .dark {
+
+  .vibely.dark {
     --background: 240 10% 10%;
     --foreground: 240 5% 95%;
     --card: 240 10% 12%;
@@ -55,6 +60,186 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+  }
+  
+  /* Forest Theme */
+  .forest {
+    --background: 120 10% 97%;
+    --foreground: 120 10% 20%;
+    --card: 120 5% 100%;
+    --card-foreground: 120 10% 20%;
+    --popover: 120 5% 100%;
+    --popover-foreground: 120 10% 20%;
+    --primary: 130 60% 40%;
+    --primary-foreground: 130 50% 98%;
+    --secondary: 110 30% 92%;
+    --secondary-foreground: 110 10% 20%;
+    --muted: 110 30% 96%;
+    --muted-foreground: 110 5% 45%;
+    --accent: 110 40% 98%;
+    --accent-foreground: 110 10% 20%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 110 20% 88%;
+    --input: 110 10% 100%;
+    --ring: 130 60% 40%;
+  }
+
+  .forest.dark {
+    --background: 120 10% 10%;
+    --foreground: 120 5% 95%;
+    --card: 120 10% 12%;
+    --card-foreground: 120 5% 95%;
+    --popover: 120 10% 10%;
+    --popover-foreground: 120 5% 95%;
+    --primary: 130 50% 55%;
+    --primary-foreground: 130 40% 98%;
+    --secondary: 120 10% 20%;
+    --secondary-foreground: 120 5% 95%;
+    --muted: 120 10% 25%;
+    --muted-foreground: 120 5% 65%;
+    --accent: 120 10% 22%;
+    --accent-foreground: 120 5% 95%;
+    --destructive: 0 60% 40%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 120 10% 20%;
+    --input: 120 10% 20%;
+    --ring: 130 50% 55%;
+  }
+
+  /* Ocean Theme */
+  .ocean {
+    --background: 210 30% 97%;
+    --foreground: 210 10% 20%;
+    --card: 210 20% 100%;
+    --card-foreground: 210 10% 20%;
+    --popover: 210 20% 100%;
+    --popover-foreground: 210 10% 20%;
+    --primary: 220 70% 55%;
+    --primary-foreground: 220 50% 98%;
+    --secondary: 200 40% 92%;
+    --secondary-foreground: 200 10% 20%;
+    --muted: 200 40% 96%;
+    --muted-foreground: 200 5% 45%;
+    --accent: 200 50% 98%;
+    --accent-foreground: 200 10% 20%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 200 30% 88%;
+    --input: 200 20% 100%;
+    --ring: 220 70% 55%;
+  }
+
+  .ocean.dark {
+    --background: 210 15% 10%;
+    --foreground: 210 5% 95%;
+    --card: 210 15% 12%;
+    --card-foreground: 210 5% 95%;
+    --popover: 210 15% 10%;
+    --popover-foreground: 210 5% 95%;
+    --primary: 220 60% 65%;
+    --primary-foreground: 220 40% 98%;
+    --secondary: 210 10% 20%;
+    --secondary-foreground: 210 5% 95%;
+    --muted: 210 10% 25%;
+    --muted-foreground: 210 5% 65%;
+    --accent: 210 10% 22%;
+    --accent-foreground: 210 5% 95%;
+    --destructive: 0 60% 40%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 10% 20%;
+    --input: 210 10% 20%;
+    --ring: 220 60% 65%;
+  }
+
+  /* Sunset Theme */
+  .sunset {
+    --background: 30 50% 97%;
+    --foreground: 30 10% 20%;
+    --card: 30 40% 100%;
+    --card-foreground: 30 10% 20%;
+    --popover: 30 40% 100%;
+    --popover-foreground: 30 10% 20%;
+    --primary: 340 80% 60%;
+    --primary-foreground: 340 50% 98%;
+    --secondary: 20 60% 92%;
+    --secondary-foreground: 20 10% 20%;
+    --muted: 20 60% 96%;
+    --muted-foreground: 20 5% 45%;
+    --accent: 20 70% 98%;
+    --accent-foreground: 20 10% 20%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 20 50% 88%;
+    --input: 20 40% 100%;
+    --ring: 340 80% 60%;
+  }
+
+  .sunset.dark {
+    --background: 280 10% 10%;
+    --foreground: 280 5% 95%;
+    --card: 280 10% 12%;
+    --card-foreground: 280 5% 95%;
+    --popover: 280 10% 10%;
+    --popover-foreground: 280 5% 95%;
+    --primary: 340 70% 70%;
+    --primary-foreground: 340 40% 98%;
+    --secondary: 20 15% 20%;
+    --secondary-foreground: 20 5% 95%;
+    --muted: 20 15% 25%;
+    --muted-foreground: 20 5% 65%;
+    --accent: 20 15% 22%;
+    --accent-foreground: 20 5% 95%;
+    --destructive: 0 60% 40%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 20 10% 20%;
+    --input: 20 10% 20%;
+    --ring: 340 70% 70%;
+  }
+  
+  /* Matrix Theme */
+  .matrix {
+    --background: 150 50% 5%;
+    --foreground: 150 100% 80%;
+    --card: 150 30% 10%;
+    --card-foreground: 150 100% 80%;
+    --popover: 150 30% 8%;
+    --popover-foreground: 150 100% 80%;
+    --primary: 150 100% 50%;
+    --primary-foreground: 150 50% 5%;
+    --secondary: 150 20% 15%;
+    --secondary-foreground: 150 100% 80%;
+    --muted: 150 20% 20%;
+    --muted-foreground: 150 60% 60%;
+    --accent: 150 25% 18%;
+    --accent-foreground: 150 100% 85%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 25% 25%;
+    --input: 150 25% 15%;
+    --ring: 150 100% 50%;
+  }
+  
+  .matrix.dark {
+    --background: 150 60% 3%;
+    --foreground: 150 100% 85%;
+    --card: 150 40% 8%;
+    --card-foreground: 150 100% 85%;
+    --popover: 150 40% 6%;
+    --popover-foreground: 150 100% 85%;
+    --primary: 150 100% 60%;
+    --primary-foreground: 150 60% 3%;
+    --secondary: 150 25% 12%;
+    --secondary-foreground: 150 100% 85%;
+    --muted: 150 25% 18%;
+    --muted-foreground: 150 70% 65%;
+    --accent: 150 30% 15%;
+    --accent-foreground: 150 100% 90%;
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 30% 22%;
+    --input: 150 30% 12%;
+    --ring: 150 100% 60%;
   }
 }
 

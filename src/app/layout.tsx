@@ -3,6 +3,7 @@ import { Lora, Nunito_Sans } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { cn } from '@/lib/utils';
+import { ThemeProvider } from '@/hooks/use-theme';
 
 const fontLora = Lora({
   subsets: ['latin'],
@@ -46,8 +47,10 @@ export default function RootLayout({
           fontNunitoSans.variable
         )}
       >
-        {children}
-        <Toaster />
+        <ThemeProvider>
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
