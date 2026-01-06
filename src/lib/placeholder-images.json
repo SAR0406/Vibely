@@ -1,3 +1,46 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "user-1",
+      "description": "Avatar for Amelia",
+      "imageUrl": "https://images.unsplash.com/photo-1609505848912-b7c3b8b4beda?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2NzY3NzY4NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "user-2",
+      "description": "Avatar for Ben",
+      "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3Njc2ODE4NDJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "user-3",
+      "description": "Avatar for Clara",
+      "imageUrl": "https://images.unsplash.com/photo-1589268579398-1be8358506ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8d29tYW4lMjBzbWlsZXxlbnwwfHx8fDE3Njc2ODAyNDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman smile"
+    },
+    {
+      "id": "user-4",
+      "description": "Avatar for David",
+      "imageUrl": "https://images.unsplash.com/photo-1537511446984-935f663eb1f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxtYW4lMjBwcm9mZXNzaW9uYWx8ZW58MHx8fHwxNzY3NTg4MDc5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man professional"
+    },
+    {
+      "id": "user-5",
+      "description": "Avatar for You",
+      "imageUrl": "https://images.unsplash.com/photo-1601459033913-97c8f496db93?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwZXJzb24lMjBuYXR1cmV8ZW58MHx8fHwxNzY3Njc1NzQ2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person nature"
+    },
+    {
+      "id": "user-6",
+      "description": "Avatar for Emily",
+      "imageUrl": "https://images.unsplash.com/photo-1557080883-d9ce025fa255?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx3b21hbiUyMGdsYXNzZXN8ZW58MHx8fHwxNzY3NjU3NzE5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman glasses"
+    },
+    {
+      "id": "user-7",
+      "description": "Avatar for Frank",
+      "imageUrl": "https://images.unsplash.com/photo-1714063388968-d33095d2f542?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxtYW4lMjBvdXRkb29yfGVufDB8fHx8MTc2NzYwMzM5Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man outdoor"
+    }
+  ]
 }
