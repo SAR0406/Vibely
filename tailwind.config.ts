@@ -56,12 +56,12 @@ export default {
           '5': 'hsl(var(--chart-5))',
         },
         sidebar: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
-          accent: 'hsl(var(--accent))',
-          'accent-foreground': 'hsl(var(--accent-foreground))',
-          border: 'hsl(var(--border))',
-          ring: 'hsl(var(--ring))',
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+          accent: "hsl(var(--accent))",
+          "accent-foreground": "hsl(var(--accent-foreground))",
+          border: "hsl(var(--border))",
+          ring: "hsl(var(--ring))",
         },
       },
       borderRadius: {
