@@ -6,6 +6,7 @@ import {
   Zap,
   Users,
   Palette,
+  ChevronsRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -20,7 +21,7 @@ const FeatureCard = ({
   description: string;
 }) => (
   <div className="rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-lg">
-    <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
       {icon}
     </div>
     <h3 className="mb-2 font-headline text-xl font-semibold">{title}</h3>
@@ -34,7 +35,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <ChevronsRight className="size-8 text-primary" />
+            <ChevronsRight className="h-8 w-8 text-primary" />
             <span className="font-headline text-xl font-bold">Vibely</span>
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
@@ -63,7 +64,7 @@ export default function LandingPage() {
             </Button>
             <Button asChild>
               <Link href="/signup">
-                Get Started Free <ArrowRight className="ml-2" />
+                Get Started Free <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </div>
@@ -74,7 +75,7 @@ export default function LandingPage() {
         <section className="container mx-auto px-4 py-20 text-center md:px-6 md:py-32">
           <div className="mx-auto max-w-3xl">
             <div className="mb-4 inline-block rounded-full border bg-muted px-3 py-1 text-sm">
-              <Sparkles className="mr-2 inline size-4 text-primary" />
+              <Sparkles className="mr-2 inline h-4 w-4 text-primary" />
               AI-Powered Channel Assistance
             </div>
             <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-6xl">
@@ -87,7 +88,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
               <Button size="lg" asChild>
                 <Link href="/signup">
-                  Start for Free <ArrowRight className="ml-2" />
+                  Start for Free <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline">
@@ -99,8 +100,8 @@ export default function LandingPage() {
 
         <section className="container mx-auto px-4 py-16 md:px-6 md:py-24">
           <div className="relative">
-            <div className="absolute -left-16 -top-16 size-48 rounded-full bg-primary/5 opacity-50 blur-3xl"></div>
-            <div className="absolute -right-16 bottom-0 size-64 rounded-full bg-accent/5 opacity-50 blur-3xl"></div>
+            <div className="absolute -left-16 -top-16 h-48 w-48 rounded-full bg-primary/5 opacity-50 blur-3xl"></div>
+            <div className="absolute -right-16 bottom-0 h-64 w-64 rounded-full bg-accent/5 opacity-50 blur-3xl"></div>
             <Image
               src="https://picsum.photos/seed/vibely-app/1200/800"
               alt="Vibely App Screenshot"
@@ -161,7 +162,7 @@ export default function LandingPage() {
       <footer className="border-t">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
           <div className="flex items-center gap-2">
-            <ChevronsRight className="size-6 text-primary" />
+            <ChevronsRight className="h-6 w-6 text-primary" />
             <span className="font-headline text-lg font-bold">Vibely</span>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -186,20 +187,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-// A component that's not exported
-const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <path d="m6 17 5-5-5-5" />
-    <path d="m13 17 5-5-5-5" />
-  </svg>
-);

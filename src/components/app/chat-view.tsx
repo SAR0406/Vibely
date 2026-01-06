@@ -75,7 +75,7 @@ function AvatarGroup({ userIds, allUsers }: { userIds: string[], allUsers: User[
     return (
       <div className="flex -space-x-2 overflow-hidden">
         {displayedUsers.slice(0, 3).map((user) => (
-          <Avatar key={user.id} className="inline-block size-8 border-2 border-background">
+          <Avatar key={user.id} className="inline-block h-8 w-8 border-2 border-background">
             <AvatarImage asChild src={user.avatarUrl}>
                <Image src={user.avatarUrl} alt={user.name} width={32} height={32} className="object-cover" />
             </AvatarImage>
@@ -83,7 +83,7 @@ function AvatarGroup({ userIds, allUsers }: { userIds: string[], allUsers: User[
           </Avatar>
         ))}
         {displayedUsers.length > 3 && (
-          <Avatar className="relative flex size-8 items-center justify-center rounded-full border-2 border-background bg-muted">
+          <Avatar className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-muted">
             <span className="text-xs font-medium">+{userIds.length - 3}</span>
           </Avatar>
         )}
@@ -144,7 +144,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.3 }}
-          className="flex h-full flex-col items-center justify-center bg-background/50 text-center"
+          className="flex h-full flex-col items-center justify-center bg-muted/30 text-center"
         >
           <div className="p-8">
             <h2 className="font-headline text-2xl font-semibold">
@@ -166,9 +166,9 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="flex h-full flex-col bg-background"
+      className="flex h-full flex-col bg-muted/30"
     >
-      <header className="flex h-16 shrink-0 items-center justify-between border-b p-4">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background/80 p-4 backdrop-blur-sm">
         <div className="flex items-center gap-4">
           {allUsers && <AvatarGroup userIds={channel.members} allUsers={allUsers} />}
           <div>
@@ -179,37 +179,31 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
           </div>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)}>
-          <Settings className="size-5" />
+          <Settings className="h-5 w-5" />
           <span className="sr-only">Channel Settings</span>
         </Button>
       </header>
 
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
-          <div className="p-4 md:p-8 space-y-6">
+          <div className="space-y-6 p-4 md:p-8">
             {messages && allUsers && messages.map((message, index) => {
               const author = allUsers.find((u) => u.id === message.authorId);
               if (!author) return null; // Or a placeholder
               return (
-                <motion.div
+                <ChatMessage
                   key={message.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                >
-                  <ChatMessage
-                    message={message}
-                    author={author}
-                    isSender={message.authorId === currentUser?.id}
-                  />
-                </motion.div>
+                  message={message}
+                  author={author}
+                  isSender={message.authorId === currentUser?.id}
+                />
               );
             })}
           </div>
         </ScrollArea>
       </div>
 
-      <footer className="p-4 border-t bg-background">
+      <footer className="border-t bg-background/80 p-4 backdrop-blur-sm">
         <div className="h-6 px-2 text-sm text-muted-foreground">
           {/* Typing indicator can be added here */}
         </div>
@@ -218,7 +212,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
           className="flex w-full items-center gap-2"
         >
           <Button variant="ghost" size="icon" type="button" className="hover:bg-muted">
-            <Paperclip className="size-5 text-muted-foreground" />
+            <Paperclip className="h-5 w-5 text-muted-foreground" />
              <span className="sr-only">Attach file</span>
           </Button>
           <div className="relative flex-1">
@@ -232,15 +226,15 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
               variant="ghost"
               size="icon"
               type="button"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-muted/50"
+              className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-muted/50"
             >
-              <Smile className="size-5 text-muted-foreground" />
+              <Smile className="h-5 w-5 text-muted-foreground" />
               <span className="sr-only">Add emoji</span>
             </Button>
           </div>
 
           <Button type="submit" size="icon" disabled={!inputValue.trim()} className="rounded-full">
-            <Send className="size-5" />
+            <Send className="h-5 w-5" />
             <span className="sr-only">Send message</span>
           </Button>
         </form>

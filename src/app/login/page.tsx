@@ -143,19 +143,19 @@ export default function LoginPage() {
   if (isUserLoading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="size-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <Card className="rounded-2xl shadow-2xl shadow-black/10">
+        <Card>
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center">
               <Link href="/" className="flex items-center gap-2">
-                <ChevronsRight className="size-10 text-primary" />
+                <ChevronsRight className="h-10 w-10 text-primary" />
               </Link>
             </div>
             <CardTitle className="font-headline text-3xl">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Check, CheckCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -36,7 +37,10 @@ export function ChatMessage({ message, author, isSender }: MessageProps) {
     message.readStatus === 'read' ? CheckCheck : Check;
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
       className={cn('group flex items-start gap-3', {
         'flex-row-reverse': isSender,
       })}
@@ -89,13 +93,13 @@ export function ChatMessage({ message, author, isSender }: MessageProps) {
 
           {isSender && message.readStatus && (
             <ReadStatusIcon
-              className={cn('size-4', {
+              className={cn('h-4 w-4', {
                 'text-blue-500': message.readStatus === 'read',
               })}
             />
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
