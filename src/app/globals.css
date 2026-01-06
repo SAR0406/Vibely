@@ -65,19 +65,19 @@
   /* Dusk Theme */
   .dusk {
     --background: 230 20% 98%;
-    --foreground: 230 20% 10%;
+    --foreground: 240 10% 3.9%;
     --card: 230 20% 100%;
-    --card-foreground: 230 20% 10%;
+    --card-foreground: 240 10% 3.9%;
     --popover: 230 20% 100%;
-    --popover-foreground: 230 20% 10%;
+    --popover-foreground: 240 10% 3.9%;
     --primary: 340 85% 60%;
     --primary-foreground: 0 0% 98%;
     --secondary: 230 20% 94%;
-    --secondary-foreground: 230 20% 20%;
+    --secondary-foreground: 240 5.9% 10%;
     --muted: 230 20% 94%;
     --muted-foreground: 230 20% 45%;
     --accent: 230 20% 90%;
-    --accent-foreground: 230 20% 10%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 230 20% 88%;
@@ -110,19 +110,19 @@
   /* Latte Theme */
   .latte {
     --background: 35 40% 96%;
-    --foreground: 35 20% 15%;
+    --foreground: 240 10% 3.9%;
     --card: 35 40% 98%;
-    --card-foreground: 35 20% 15%;
+    --card-foreground: 240 10% 3.9%;
     --popover: 35 40% 98%;
-    --popover-foreground: 35 20% 15%;
+    --popover-foreground: 240 10% 3.9%;
     --primary: 25 85% 55%;
     --primary-foreground: 35 20% 98%;
     --secondary: 35 40% 92%;
-    --secondary-foreground: 35 20% 20%;
+    --secondary-foreground: 240 5.9% 10%;
     --muted: 35 40% 92%;
     --muted-foreground: 35 20% 45%;
     --accent: 35 40% 88%;
-    --accent-foreground: 35 20% 10%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 35 40% 85%;
@@ -155,19 +155,19 @@
   /* Mint Theme */
   .mint {
     --background: 160 30% 98%;
-    --foreground: 160 20% 10%;
+    --foreground: 240 10% 3.9%;
     --card: 160 30% 100%;
-    --card-foreground: 160 20% 10%;
+    --card-foreground: 240 10% 3.9%;
     --popover: 160 30% 100%;
-    --popover-foreground: 160 20% 10%;
+    --popover-foreground: 240 10% 3.9%;
     --primary: 150 70% 40%;
     --primary-foreground: 0 0% 98%;
     --secondary: 160 30% 94%;
-    --secondary-foreground: 160 20% 20%;
+    --secondary-foreground: 240 5.9% 10%;
     --muted: 160 30% 94%;
     --muted-foreground: 160 20% 45%;
     --accent: 160 30% 90%;
-    --accent-foreground: 160 20% 10%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 160 30% 88%;
@@ -200,19 +200,19 @@
   /* Sunset Theme */
   .sunset {
     --background: 20 50% 97%;
-    --foreground: 20 15% 10%;
+    --foreground: 240 10% 3.9%;
     --card: 20 50% 100%;
-    --card-foreground: 20 15% 10%;
+    --card-foreground: 240 10% 3.9%;
     --popover: 20 50% 100%;
-    --popover-foreground: 20 15% 10%;
+    --popover-foreground: 240 10% 3.9%;
     --primary: 25 95% 53.1%;
     --primary-foreground: 20 50% 98%;
     --secondary: 20 50% 93%;
-    --secondary-foreground: 20 15% 20%;
+    --secondary-foreground: 240 5.9% 10%;
     --muted: 20 50% 93%;
     --muted-foreground: 20 15% 45%;
     --accent: 20 50% 89%;
-    --accent-foreground: 20 15% 10%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 20 50% 86%;
@@ -245,19 +245,19 @@
   /* Ocean Theme */
   .ocean {
     --background: 205 60% 98%;
-    --foreground: 215 30% 15%;
+    --foreground: 240 10% 3.9%;
     --card: 205 60% 100%;
-    --card-foreground: 215 30% 15%;
+    --card-foreground: 240 10% 3.9%;
     --popover: 205 60% 100%;
-    --popover-foreground: 215 30% 15%;
+    --popover-foreground: 240 10% 3.9%;
     --primary: 210 85% 55%;
     --primary-foreground: 0 0% 98%;
     --secondary: 205 60% 94%;
-    --secondary-foreground: 215 30% 25%;
+    --secondary-foreground: 240 5.9% 10%;
     --muted: 205 60% 94%;
     --muted-foreground: 215 30% 50%;
     --accent: 205 60% 90%;
-    --accent-foreground: 215 30% 15%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 205 60% 88%;
@@ -331,7 +331,6 @@
     --input: 240 3.7% 15.9%;
     --ring: 262.1 83.3% 57.8%;
   }
-
 }
 
 @layer base {
@@ -347,5 +346,36 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Custom utility for the gradient text */
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 bg-clip-text text-transparent;
+  }
+}
+
+@layer components {
+  /* Override bg-primary for light themes to apply gradient */
+  :root:not(.dark) .bg-primary {
+    @apply bg-gradient-to-r from-purple-500 to-pink-500 text-white;
+  }
+
+  :root:not(.dark) .text-primary {
+    @apply text-gradient-primary;
+  }
+
+  /* Ensure ring color uses the start of the gradient */
+  :root:not(.dark) {
+    --ring: 262.1 83.3% 57.8%; /* Purple color for ring */
+  }
+
+  /* Override for active sidebar item */
+  :root:not(.dark) [data-sidebar='menu-button'][data-active='true'] {
+    @apply bg-gradient-to-r from-purple-500 to-pink-500 text-white;
+  }
+
+  /* Override for sent chat message */
+  :root:not(.dark) .bg-primary.rounded-br-none {
+     @apply bg-gradient-to-r from-purple-500 to-pink-500 text-white;
   }
 }
