@@ -4,14 +4,17 @@ import { PlaceHolderImages } from './placeholder-images';
 const getUserAvatar = (id: string) => 
   PlaceHolderImages.find(img => img.id === id)?.imageUrl || 'https://picsum.photos/seed/placeholder/100/100';
 
+// This data is now primarily for fallback or initial structure reference.
+// The app should rely on Firestore for live data.
+
 export const users: User[] = [
-  { id: 'user-1', name: 'Amelia', avatarUrl: getUserAvatar('user-1'), online: true },
-  { id: 'user-2', name: 'Ben', avatarUrl: getUserAvatar('user-2'), online: true },
-  { id: 'user-3', name: 'Clara', avatarUrl: getUserAvatar('user-3'), online: false },
-  { id: 'user-4', name: 'David', avatarUrl: getUserAvatar('user-4'), online: true },
-  { id: 'user-5', name: 'You', avatarUrl: getUserAvatar('user-5'), online: true },
-  { id: 'user-6', name: 'Emily', avatarUrl: getUserAvatar('user-6'), online: false },
-  { id: 'user-7', name: 'Frank', avatarUrl: getUserAvatar('user-7'), online: true },
+  { id: 'user-1', name: 'Amelia', fullName: 'Amelia', avatarUrl: getUserAvatar('user-1'), online: true },
+  { id: 'user-2', name: 'Ben', fullName: 'Ben', avatarUrl: getUserAvatar('user-2'), online: true },
+  { id: 'user-3', name: 'Clara', fullName: 'Clara', avatarUrl: getUserAvatar('user-3'), online: false },
+  { id: 'user-4', name: 'David', fullName: 'David', avatarUrl: getUserAvatar('user-4'), online: true },
+  { id: 'user-5', name: 'You', fullName: 'You', avatarUrl: getUserAvatar('user-5'), online: true },
+  { id: 'user-6', name: 'Emily', fullName: 'Emily', avatarUrl: getUserAvatar('user-6'), online: false },
+  { id: 'user-7', name: 'Frank', fullName: 'Frank', avatarUrl: getUserAvatar('user-7'), online: true },
 ];
 
 export const channels: Channel[] = [
@@ -21,6 +24,7 @@ export const channels: Channel[] = [
     description: 'Discussions about our next big feature.',
     members: ['user-1', 'user-2', 'user-5'],
     type: 'private',
+    ownerId: 'user-5',
     automations: [
       { id: 'auto-1', name: 'Welcome Message', description: 'Sends a welcome message to new members.', enabled: true, content: 'Welcome to the Product Team channel, {{user}}!' },
       { id: 'auto-2', name: 'Scheduled Event Invite', description: 'Sends invites for scheduled events.', enabled: false, content: 'Reminder: Weekly sync tomorrow at 10 AM.' },
@@ -32,17 +36,10 @@ export const channels: Channel[] = [
     description: 'A place for fun and random thoughts.',
     members: ['user-1', 'user-2', 'user-3', 'user-4', 'user-5', 'user-6', 'user-7'],
     type: 'public',
+    ownerId: 'user-1',
     automations: [
        { id: 'auto-3', name: 'Ice Breaker', description: 'Prompts users with an ice breaker question.', enabled: true, content: "What's the most interesting thing you've read this week?" },
     ],
-  },
-  {
-    id: 'channel-3',
-    name: 'Design Critique',
-    description: 'Share your designs and get feedback.',
-    members: ['user-1', 'user-3', 'user-6', 'user-5'],
-    type: 'private',
-    automations: [],
   },
 ];
 
@@ -70,29 +67,5 @@ export const messages: Message[] = [
     content: 'Onboarding is a solid plan. I can put together some mockups for a new flow. I\'ll have them ready by EOD.',
     timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
     readStatus: 'delivered',
-  },
-  {
-    id: 'msg-4',
-    channelId: 'channel-2',
-    authorId: 'user-4',
-    content: 'Just saw the funniest cat video! 😂 Has to be shared.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    readStatus: 'read',
-  },
-    {
-    id: 'msg-5',
-    channelId: 'channel-2',
-    authorId: 'user-3',
-    content: 'Haha, send it over! I need a laugh.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 28).toISOString(),
-    readStatus: 'read',
-  },
-    {
-    id: 'msg-6',
-    channelId: 'channel-2',
-    authorId: 'user-7',
-    content: "Speaking of random, has anyone tried that new coffee shop downtown? I've heard good things.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    readStatus: 'read',
   },
 ];

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,10 +30,10 @@ import {
   getChannelAssistantSuggestions,
   ChannelAssistantOutput,
 } from '@/ai/flows/channel-assistant-suggestions';
-import { users } from '@/lib/data';
 import { UserAvatar } from './user-avatar';
-import { Channel } from '@/lib/types';
-import { useUser } from '@/firebase';
+import { Channel, User } from '@/lib/types';
+import { useUser, useFirestore, useCollection } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Channel name must be at least 3 characters.'),
@@ -43,7 +43,7 @@ const formSchema = z.object({
 type CreateChannelDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onCreateChannel: (channel: Channel) => void;
+  onCreateChannel: (channel: Omit<Channel, 'id'>) => void;
 };
 
 const allAutomationSuggestions = [
@@ -61,9 +61,16 @@ export function CreateChannelDialog({
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [enabledAutomations, setEnabledAutomations] = useState<Record<string, boolean>>({});
   const { user } = useUser();
+  const firestore = useFirestore();
 
-  const otherUsers = users.filter(u => u.name !== 'You');
-  const youUser = users.find(u => u.name === 'You');
+  const allUsersQuery = useMemo(() => {
+    if(!firestore) return null;
+    return collection(firestore, 'users');
+  }, [firestore]);
+
+  const { data: allUsers } = useCollection<User>(allUsersQuery);
+
+  const otherUsers = useMemo(() => allUsers?.filter(u => u.id !== user?.uid) || [], [allUsers, user]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -91,8 +98,8 @@ export function CreateChannelDialog({
       setIsLoadingSuggestions(true);
       try {
         const memberNames = selectedMembers.map(id => {
-            if (id === user?.uid) return user.displayName || 'You';
-            return users.find(u => u.id === id)?.name || 'user'
+            const member = allUsers?.find(u => u.id === id);
+            return member?.fullName || 'user';
         });
 
         const result = await getChannelAssistantSuggestions({
@@ -112,7 +119,7 @@ export function CreateChannelDialog({
 
     const timeoutId = setTimeout(fetchSuggestions, 500);
     return () => clearTimeout(timeoutId);
-  }, [channelName, selectedMembers, user]);
+  }, [channelName, selectedMembers, allUsers]);
 
   const toggleMember = (memberId: string) => {
     if (memberId === user?.uid) return; 
@@ -125,12 +132,12 @@ export function CreateChannelDialog({
   
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     if(!user) return;
-    const newChannel: Channel = {
-        id: `channel-${Date.now()}`,
+    const newChannel: Omit<Channel, 'id'> = {
         name: values.name,
         description: suggestions?.descriptionSuggestion || `A channel for ${values.name}`,
         members: values.members,
         type: values.members.length > 2 ? 'private' : 'public',
+        ownerId: user.uid,
         automations: allAutomationSuggestions
             .filter(auto => enabledAutomations[auto.name])
             .map(auto => ({
@@ -143,7 +150,7 @@ export function CreateChannelDialog({
     };
     onCreateChannel(newChannel);
     onOpenChange(false);
-    form.reset();
+    form.reset({ name: '', members: user ? [user.uid] : []});
     setSuggestions(null);
   };
 
@@ -175,18 +182,18 @@ export function CreateChannelDialog({
 
               <FormItem>
                 <FormLabel>Members</FormLabel>
-                <div className="flex flex-wrap gap-2 rounded-md border p-4">
-                    {youUser && user && (
+                <div className="flex flex-wrap gap-2 rounded-md border p-4 min-h-[80px]">
+                    {user && (
                        <Badge variant={'default'} className="cursor-not-allowed">
-                        <UserAvatar src={youUser.avatarUrl} name={user.displayName || 'You'} className="size-4 mr-2" />
+                        <UserAvatar src={user.photoURL || undefined} name={user.displayName || 'You'} className="size-4 mr-2" />
                         {user.displayName || 'You'}
                       </Badge>
                     )}
                   {otherUsers.map(u => (
                     <button type="button" key={u.id} onClick={() => toggleMember(u.id)}>
                       <Badge variant={selectedMembers.includes(u.id) ? 'default' : 'secondary'} className="cursor-pointer">
-                        <UserAvatar src={u.avatarUrl} name={u.name} className="size-4 mr-2" />
-                        {u.name}
+                        <UserAvatar src={u.avatarUrl} name={u.fullName || 'User'} className="size-4 mr-2" />
+                        {u.fullName}
                       </Badge>
                     </button>
                   ))}

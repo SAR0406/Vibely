@@ -11,7 +11,7 @@ export type User = {
 
 export type Message = {
   id: string;
-  channelId: string;
+  channelId?: string; // Made optional as it's part of the subcollection path
   authorId: string;
   content: string;
   timestamp: string;
@@ -24,6 +24,7 @@ export type Channel = {
   description: string;
   members: string[];
   type: 'public' | 'private';
+  ownerId: string;
   automations: Automation[];
 };
 

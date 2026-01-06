@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -13,21 +13,10 @@ import {
   SidebarMenuButton,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import {
-  MessageSquare,
-  PlusCircle,
-  Users,
-  LogOut,
-} from 'lucide-react';
+import { MessageSquare, PlusCircle, Users, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-
-import type { Channel, Message, Automation, User as UserType } from '@/lib/types';
-import {
-  channels as initialChannels,
-  messages as initialMessages,
-  users as staticUsers,
-} from '@/lib/data';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import type { Channel, User as UserType } from '@/lib/types';
 import { ChatView } from './chat-view';
 import { UserAvatar } from './user-avatar';
 import { CreateChannelDialog } from './create-channel-dialog';
@@ -39,37 +28,52 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useAuth, useUser, useDoc, useFirestore } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useAuth, useUser, useDoc, useFirestore, useCollection } from '@/firebase';
+import { doc, collection, query, where } from 'firebase/firestore';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="m6 17 5-5-5-5" />
-      <path d="m13 17 5-5-5-5" />
-    </svg>
-  );
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="m6 17 5-5-5-5" />
+    <path d="m13 17 5-5-5-5" />
+  </svg>
+);
+
+function useChannels() {
+  const firestore = useFirestore();
+  const { user } = useUser();
+
+  const channelsQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'channels'),
+      where('members', 'array-contains', user.uid)
+    );
+  }, [firestore, user]);
+
+  return useCollection<Channel>(channelsQuery);
+}
 
 export default function ChatLayout() {
-  const [channels, setChannels] = useState<Channel[]>(initialChannels);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(
-    'channel-1'
-  );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const auth = useAuth();
   const { user } = useUser();
-  const router = useRouter();
   const firestore = useFirestore();
+
+  const { data: channels, isLoading: channelsLoading } = useChannels();
 
   const userDocRef = useMemo(() => {
     if (!user) return null;
@@ -79,55 +83,37 @@ export default function ChatLayout() {
   const { data: currentUserProfile } = useDoc<UserType>(userDocRef);
 
   const currentUser = useMemo(() => {
-    if (!user || !currentUserProfile) {
-      // Return a default/guest user object or null
-      return staticUsers.find(u => u.id === 'user-5');
-    }
+    if (!user || !currentUserProfile) return null;
     return {
       id: user.uid,
       name: currentUserProfile.fullName || 'User',
       avatarUrl: currentUserProfile.avatarUrl || '',
       online: true,
+      ...currentUserProfile,
     };
   }, [user, currentUserProfile]);
 
+  const selectedChannelId = searchParams.get('id');
+
   const selectedChannel = useMemo(
-    () => channels.find((c) => c.id === selectedChannelId),
+    () => channels?.find((c) => c.id === selectedChannelId),
     [channels, selectedChannelId]
   );
+  
+  const handleSelectChannel = (channelId: string) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('id', channelId);
+    router.push(`${pathname}?${newSearchParams.toString()}`);
+  }
 
-  const channelMessages = useMemo(
-    () => messages.filter((m) => m.channelId === selectedChannelId),
-    [messages, selectedChannelId]
-  );
+  const handleCreateChannel = (newChannelData: Omit<Channel, 'id'>) => {
+    const channelId = `channel-${Date.now()}`;
+    const channelRef = doc(firestore, 'channels', channelId);
+    const channelWithId = { ...newChannelData, id: channelId };
 
-  const handleCreateChannel = (newChannel: Channel) => {
-    setChannels((prev) => [...prev, newChannel]);
-    setSelectedChannelId(newChannel.id);
-  };
+    setDocumentNonBlocking(channelRef, channelWithId, {merge: false});
 
-  const handleSendMessage = (content: string) => {
-    if (!selectedChannelId || !currentUser) return;
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      channelId: selectedChannelId,
-      authorId: currentUser.id,
-      content,
-      timestamp: new Date().toISOString(),
-      readStatus: 'sent',
-    };
-    setMessages((prev) => [...prev, newMessage]);
-  };
-
-  const handleUpdateAutomations = (
-    channelId: string,
-    updatedAutomations: Automation[]
-  ) => {
-    setChannels((prev) =>
-      prev.map((c) =>
-        c.id === channelId ? { ...c, automations: updatedAutomations } : c
-      )
-    );
+    handleSelectChannel(channelId);
   };
 
   const handleLogout = async () => {
@@ -135,8 +121,9 @@ export default function ChatLayout() {
     router.push('/login');
   };
 
-  const publicChannels = channels.filter((c) => c.type === 'public');
-  const privateChannels = channels.filter((c) => c.type === 'private');
+  const publicChannels = useMemo(() => channels?.filter((c) => c.type === 'public') || [], [channels]);
+  const privateChannels = useMemo(() => channels?.filter((c) => c.type === 'private') || [], [channels]);
+
 
   return (
     <TooltipProvider>
@@ -148,9 +135,9 @@ export default function ChatLayout() {
             className="border-r border-border/20"
           >
             <SidebarHeader className="h-16 items-center justify-center p-0">
-                <Link href="/">
-                    <ChevronsRight className="size-8 text-primary" />
-                </Link>
+              <Link href="/">
+                <ChevronsRight className="size-8 text-primary" />
+              </Link>
             </SidebarHeader>
             <SidebarContent className="p-2">
               <div className="flex flex-col gap-4">
@@ -162,7 +149,7 @@ export default function ChatLayout() {
                     {publicChannels.map((channel) => (
                       <SidebarMenuItem key={channel.id}>
                         <SidebarMenuButton
-                          onClick={() => setSelectedChannelId(channel.id)}
+                          onClick={() => handleSelectChannel(channel.id)}
                           isActive={selectedChannelId === channel.id}
                           tooltip={channel.name}
                         >
@@ -181,7 +168,7 @@ export default function ChatLayout() {
                     {privateChannels.map((channel) => (
                       <SidebarMenuItem key={channel.id}>
                         <SidebarMenuButton
-                          onClick={() => setSelectedChannelId(channel.id)}
+                          onClick={() => handleSelectChannel(channel.id)}
                           isActive={selectedChannelId === channel.id}
                           tooltip={channel.name}
                         >
@@ -227,17 +214,29 @@ export default function ChatLayout() {
                         isOnline
                       />
                       <div className="flex-1 group-data-[collapsible=icon]:hidden">
-                        <p className="text-sm font-semibold">{currentUser.name}</p>
+                        <p className="text-sm font-semibold">
+                          {currentUser.name}
+                        </p>
                         <p className="text-xs text-muted-foreground">Online</p>
                       </div>
-                       <Tooltip>
+                      <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" onClick={handleLogout} className="group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleLogout}
+                            className="group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10"
+                          >
                             <LogOut className="size-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="right" className="group-data-[collapsible=icon]:block hidden">Logout</TooltipContent>
-                       </Tooltip>
+                        <TooltipContent
+                          side="right"
+                          className="group-data-[collapsible=icon]:block hidden"
+                        >
+                          Logout
+                        </TooltipContent>
+                      </Tooltip>
                     </>
                   )}
                 </div>
@@ -251,11 +250,8 @@ export default function ChatLayout() {
             </header>
             <ChatView
               key={selectedChannelId}
-              currentUser={currentUser || null}
+              currentUser={currentUser}
               channel={selectedChannel || null}
-              messages={channelMessages}
-              onSendMessage={handleSendMessage}
-              onAutomationsUpdate={handleUpdateAutomations}
             />
           </SidebarInset>
         </div>

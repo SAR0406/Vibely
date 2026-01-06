@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,11 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Channel, Automation } from '@/lib/types';
+import { Channel, Automation, User } from '@/lib/types';
 import { enableAdjustAutomations } from '@/ai/flows/enable-adjust-automations';
-import { users } from '@/lib/data';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection } from 'firebase/firestore';
+
 
 type AutomationSettingsDialogProps = {
   channel: Channel | null;
@@ -36,6 +38,14 @@ export function AutomationSettingsDialog({
   );
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const firestore = useFirestore();
+  
+  const allUsersQuery = useMemo(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'users');
+  }, [firestore]);
+
+  const { data: allUsers } = useCollection<User>(allUsersQuery);
 
   if (!channel) return null;
 
@@ -69,7 +79,7 @@ export function AutomationSettingsDialog({
       }, {} as Record<string, string>);
 
       const memberList = channel.members.map(
-        (id) => users.find((u) => u.id === id)?.name || 'Unknown'
+        (id) => allUsers?.find((u) => u.id === id)?.fullName || 'Unknown'
       );
 
       await enableAdjustAutomations({
