@@ -1,0 +1,300 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user within the Vibely application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "username": {
+          "type": "string",
+          "description": "The username chosen by the user."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL of the user's avatar image.",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "username",
+        "fullName",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Channel": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Channel",
+      "type": "object",
+      "description": "Represents a channel within the Vibely application, where users can send messages.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Channel entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the channel."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the channel."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Indicates whether the channel is public or private."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Channel) ID of the user who owns the channel."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the channel was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the channel was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "isPublic",
+        "ownerId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Message": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Message",
+      "type": "object",
+      "description": "Represents a message sent within a channel.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Message entity."
+        },
+        "channelId": {
+          "type": "string",
+          "description": "Reference to Channel. (Relationship: Channel 1:N Message) ID of the channel the message belongs to."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Message) ID of the user who sent the message."
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the message."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the message was sent.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the message was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "channelId",
+        "senderId",
+        "content",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ChannelMembership": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChannelMembership",
+      "type": "object",
+      "description": "Represents the relationship between a User and a Channel (many-to-many).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ChannelMembership entity."
+        },
+        "channelId": {
+          "type": "string",
+          "description": "Reference to Channel. (Relationship: Channel N:N User)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User N:N Channel)"
+        },
+        "joinedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user joined the channel.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "channelId",
+        "userId",
+        "joinedAt"
+      ]
+    },
+    "Attachment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Attachment",
+      "type": "object",
+      "description": "Represents an attachment associated with a message.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Attachment entity."
+        },
+        "messageId": {
+          "type": "string",
+          "description": "Reference to Message. (Relationship: Message 1:N Attachment)"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL of the attached file.",
+          "format": "uri"
+        },
+        "filename": {
+          "type": "string",
+          "description": "Name of the attached file."
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type of the attached file."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the attachment was uploaded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "messageId",
+        "url",
+        "filename",
+        "mimeType",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information.  Uses path-based ownership for security.  All data is private and owned by the user with the matching {userId}.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/channels/{channelId}",
+        "definition": {
+          "entityName": "Channel",
+          "schema": {
+            "$ref": "#/backend/entities/Channel"
+          },
+          "description": "Stores channel information. Includes denormalized 'members' map for authorization independence and the 'ownerId' for simple management.",
+          "params": [
+            {
+              "name": "channelId",
+              "description": "The unique identifier for the channel."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/channels/{channelId}/messages/{messageId}",
+        "definition": {
+          "entityName": "Message",
+          "schema": {
+            "$ref": "#/backend/entities/Message"
+          },
+          "description": "Stores messages for a specific channel.",
+          "params": [
+            {
+              "name": "channelId",
+              "description": "The unique identifier for the channel."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier for the message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/channels/{channelId}/messages/{messageId}/attachments/{attachmentId}",
+        "definition": {
+          "entityName": "Attachment",
+          "schema": {
+            "$ref": "#/backend/entities/Attachment"
+          },
+          "description": "Stores attachments for a specific message.",
+          "params": [
+            {
+              "name": "channelId",
+              "description": "The unique identifier for the channel."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier for the message."
+            },
+            {
+              "name": "attachmentId",
+              "description": "The unique identifier for the attachment."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to provide a secure, scalable, and easily maintainable backend for the Vibely application, prioritizing authorization independence and clarity. The key strategy is denormalization to avoid complex `get()` calls in security rules, ensuring atomic operations and easy debugging.\n\n*   **User Data:** User profiles are stored in `/users/{userId}` using Path-Based ownership. This makes user data private and easily manageable with security rules based on `request.auth.uid`.\n*   **Channels:** Channels are stored in a top-level `/channels` collection.  `ChannelMembership` documents are denormalized into the `channels` documents using a map called `members`.  The `ownerId` is also maintained on the Channel. This design allows for easy querying of channels and simplifies security rules.\n*   **Messages:** Messages are stored in subcollections under each channel (`/channels/{channelId}/messages/{messageId}`). This supports efficient querying of messages within a channel. The `senderId` is used for identifying the author of the message.\n*   **Attachments:** Attachments are stored in subcollections under each message (`/channels/{channelId}/messages/{messageId}/attachments/{attachmentId}`).\n\n**Authorization Independence & QAPs:**\n\n*   The denormalization of channel members into the `members` field inside the `channel` documents facilitates Authorization Independence. Security rules can validate membership directly on the `channel` document without needing to `get()` the `ChannelMembership` document. This also enables secure listing of channels accessible to a user (QAP).\n*   Path-based ownership (`/users/{userId}`) for private user data supports secure QAPs as rules can filter based on `request.auth.uid` without further `get()` calls.\n\n**Data Clarity and Predictability:**\n\n*   Explicit path structures and field naming conventions are used to make the database schema easy to understand and maintain. Timestamps (`createdAt`, `updatedAt`) are consistently used across all entities.\n\nThis design adheres to all core design principles and strategy mandates, creating a robust and secure foundation for the Vibely application."
+  }
+}
