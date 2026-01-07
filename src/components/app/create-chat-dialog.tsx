@@ -33,7 +33,7 @@ import {
 import { UserAvatar } from './user-avatar';
 import { Chat, User } from '@/lib/types';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, where, doc, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, doc, limit } from 'firebase/firestore';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ScrollArea } from '../ui/scroll-area';
 

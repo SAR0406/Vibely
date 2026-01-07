@@ -203,6 +203,7 @@ export default function ChatLayout() {
   }
 
   const handleCreateChat = (newChatData: Omit<Chat, 'id'>) => {
+    if (!firestore) return;
     const chatId = `chat-${Date.now()}`;
     const chatRef = doc(firestore, 'chats', chatId);
     const chatWithId = { ...newChatData, id: chatId };
@@ -219,7 +220,7 @@ export default function ChatLayout() {
   };
   
   const handleStartDirectMessage = (otherUser: UserType) => {
-    if (!currentUser) return;
+    if (!currentUser || !firestore) return;
   
     const existingChat = chats?.find(c => 
       c.isDM &&
@@ -254,14 +255,16 @@ export default function ChatLayout() {
   };
 
   const handleLogout = async () => {
-    if (user) {
+    if (user && firestore) {
         const userStatusRef = doc(firestore, 'users', user.uid);
         await updateDoc(userStatusRef, {
             online: false,
             lastSeen: serverTimestamp(),
         });
     }
-    await auth.signOut();
+    if (auth) {
+        await auth.signOut();
+    }
     router.push('/login');
   };
 
@@ -446,7 +449,7 @@ export default function ChatLayout() {
             </SidebarFooter>
           </Sidebar>
           
-          <main className="flex-1">
+          <main className="flex-1 flex flex-col">
             <header className="absolute left-4 top-4 z-20">
               <SidebarTrigger />
             </header>
