@@ -46,7 +46,7 @@ export function AutomationSettingsDialog({
     // Firestore 'in' queries are limited to 30 items. 
     // If a chat can have more members, this would need pagination or a different approach.
     const memberIds = chat.members.length > 30 ? chat.members.slice(0, 30) : chat.members;
-    return query(collection(firestore, 'users'), where('id', 'in', memberIds));
+    return query(collection(firestore, 'userDirectory'), where('id', 'in', memberIds));
   }, [firestore, chat]);
 
   const { data: channelUsers } = useCollection<User>(channelUsersQuery);
