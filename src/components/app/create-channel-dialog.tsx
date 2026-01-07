@@ -34,6 +34,7 @@ import { UserAvatar } from './user-avatar';
 import { Channel, User } from '@/lib/types';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
+import { Skeleton } from '../ui/skeleton';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Channel name must be at least 3 characters.'),
@@ -68,7 +69,7 @@ export function CreateChannelDialog({
     return collection(firestore, 'users');
   }, [firestore]);
 
-  const { data: allUsers } = useCollection<User>(allUsersQuery);
+  const { data: allUsers, isLoading: isLoadingUsers } = useCollection<User>(allUsersQuery);
 
   const otherUsers = useMemo(() => allUsers?.filter(u => u.id !== user?.uid) || [], [allUsers, user]);
 
@@ -99,7 +100,7 @@ export function CreateChannelDialog({
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (channelName.length < 3) {
+      if (channelName.length < 3 || !allUsers) {
         setSuggestions(null);
         return;
       }
@@ -189,20 +190,30 @@ export function CreateChannelDialog({
               <FormItem>
                 <FormLabel>Members</FormLabel>
                 <div className="flex flex-wrap gap-2 rounded-md border p-4 min-h-[80px]">
-                    {user && (
-                       <Badge variant={'default'} className="cursor-not-allowed">
-                        <UserAvatar src={user.photoURL || undefined} name={user.displayName || 'You'} className="size-4 mr-2" />
-                        {user.displayName || 'You'}
-                      </Badge>
+                    {isLoadingUsers ? (
+                        <div className="flex flex-wrap gap-2">
+                            <Skeleton className="h-6 w-20 rounded-full" />
+                            <Skeleton className="h-6 w-24 rounded-full" />
+                            <Skeleton className="h-6 w-16 rounded-full" />
+                        </div>
+                    ) : (
+                        <>
+                        {user && (
+                        <Badge variant={'default'} className="cursor-not-allowed">
+                            <UserAvatar src={user.photoURL || undefined} name={user.displayName || 'You'} className="size-4 mr-2" />
+                            {user.displayName || 'You'}
+                        </Badge>
+                        )}
+                        {otherUsers.map(u => (
+                            <button type="button" key={u.id} onClick={() => toggleMember(u.id)}>
+                            <Badge variant={selectedMembers.includes(u.id) ? 'default' : 'secondary'} className="cursor-pointer">
+                                <UserAvatar src={u.avatarUrl} name={u.fullName || 'User'} className="size-4 mr-2" />
+                                {u.fullName}
+                            </Badge>
+                            </button>
+                        ))}
+                        </>
                     )}
-                  {otherUsers.map(u => (
-                    <button type="button" key={u.id} onClick={() => toggleMember(u.id)}>
-                      <Badge variant={selectedMembers.includes(u.id) ? 'default' : 'secondary'} className="cursor-pointer">
-                        <UserAvatar src={u.avatarUrl} name={u.fullName || 'User'} className="size-4 mr-2" />
-                        {u.fullName}
-                      </Badge>
-                    </button>
-                  ))}
                 </div>
                 <FormMessage>{form.formState.errors.members?.message}</FormMessage>
               </FormItem>
@@ -239,7 +250,7 @@ export function CreateChannelDialog({
                     </div>
                 ) : (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                        {channelName.length < 3 ? 'Enter a channel name to get AI suggestions.' : 'Generating suggestions...'}
+                        {channelName.length < 3 ? 'Enter a channel name to get AI suggestions.' : (isLoadingUsers ? 'Loading users...' : 'Generating suggestions...')}
                     </p>
                 )}
             </div>
