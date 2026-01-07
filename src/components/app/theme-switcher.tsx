@@ -51,7 +51,7 @@ export function ThemeSwitcher() {
                 <div className="flex items-center gap-2">
                   <div
                     className="size-4 rounded-full border"
-                    style={{ backgroundColor: t.lightColors?.primary }}
+                    style={{ backgroundColor: t.color }}
                   ></div>
                   {t.name}
                 </div>

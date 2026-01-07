@@ -1,67 +1,75 @@
 export type Theme = {
   name: string;
   id: string;
-  lightColors?: {
-    primary: string;
-    background?: string;
-    accent?: string;
-  };
+  color: string;
+  mode: 'light' | 'dark';
 };
 
 export const themes: Theme[] = [
   { 
     name: 'Vibey Light', 
     id: 'vibey-light',
-    lightColors: { primary: '#8b5cf6' },
+    color: '#8b5cf6',
+    mode: 'light',
   },
   { 
     name: 'Vibely', 
     id: 'vibely',
-    lightColors: { primary: '#7c3aed' },
+    color: '#7c3aed',
+    mode: 'dark',
   },
   {
     name: 'Paper',
     id: 'paper',
-    lightColors: { primary: '#d946ef' },
+    color: '#d946ef',
+    mode: 'light',
   },
   { 
     name: 'Dusk', 
     id: 'dusk',
-    lightColors: { primary: '#f43f5e' },
+    color: '#f43f5e',
+    mode: 'dark',
   },
   { 
     name: 'Latte', 
     id: 'latte',
-    lightColors: { primary: '#f59e0b' },
+    color: '#f59e0b',
+    mode: 'dark',
   },
   { 
     name: 'Mint', 
     id: 'mint',
-    lightColors: { primary: '#10b981' },
+    color: '#10b981',
+    mode: 'dark',
   },
   {
     name: 'Forest',
     id: 'forest',
-    lightColors: { primary: '#22c55e' },
+    color: '#22c55e',
+    mode: 'dark',
   },
   {
     name: 'Rose',
     id: 'rose',
-    lightColors: { primary: '#f43f5e' },
+    color: '#f43f5e',
+    mode: 'dark',
   },
   { 
     name: 'Sunset', 
     id: 'sunset',
-    lightColors: { primary: '#f97316' },
+    color: '#f97316',
+    mode: 'dark',
   },
   { 
     name: 'Ocean', 
     id: 'ocean',
-    lightColors: { primary: '#3b82f6' },
+    color: '#3b82f6',
+    mode: 'dark',
   },
   { 
     name: 'Custom', 
     id: 'custom',
-    lightColors: { primary: '#7c3aed' },
+    color: '#7c3aed',
+    mode: 'dark',
   },
 ];

@@ -18,7 +18,6 @@ type ThemeContextType = {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Function to convert hex to HSL string
 const hexToHslString = (hex: string): string => {
     hex = hex.replace('#', '');
     const r = parseInt(hex.substring(0, 2), 16) / 255;
@@ -45,8 +44,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [themeId, setThemeId] = useState('vibely');
   const [customColors, setCustomColorsState] = useState<CustomColors>({
     primary: '#7c3aed',
-    background: '#ffffff',
-    accent: '#f1f5f9',
+    background: '#0a0a0a',
+    accent: '#1a1a1a',
   });
   const [mounted, setMounted] = useState(false);
 
@@ -63,16 +62,23 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     setMounted(true);
   }, []);
 
+  const theme = useMemo(() => themes.find(t => t.id === themeId) || themes[0], [themeId]);
+
   useEffect(() => {
     if (!mounted) return;
 
     const root = window.document.documentElement;
     
+    // Apply light/dark class
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme.mode);
+
+    // Apply theme class
     const allThemeIds = themes.map(t => t.id);
     root.classList.remove(...allThemeIds);
-
     root.classList.add(themeId);
 
+    // Apply custom colors if 'custom' theme is selected
     if (themeId === 'custom') {
         root.style.setProperty('--primary', hexToHslString(customColors.primary));
         root.style.setProperty('--background', hexToHslString(customColors.background));
@@ -84,9 +90,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     localStorage.setItem('app-theme', themeId);
-  }, [themeId, customColors, mounted]);
-
-  const theme = useMemo(() => themes.find(t => t.id === themeId) || themes[0], [themeId]);
+  }, [themeId, theme, customColors, mounted]);
 
   const handleSetTheme = (newThemeId: string) => {
     setThemeId(newThemeId);
@@ -106,12 +110,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     customColors, 
     setCustomColors 
   };
+
+  if (!mounted) {
+    return null;
+  }
   
   return (
     <ThemeContext.Provider value={value}>
-      <div style={{ visibility: mounted ? 'visible' : 'hidden' }}>
-        {children}
-      </div>
+      {children}
     </ThemeContext.Provider>
   );
 };
