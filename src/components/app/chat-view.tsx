@@ -110,47 +110,36 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
   const { data: messages, isLoading: messagesLoading } = useMessages(chat?.id || null);
 
   const chatUsersQuery = useMemoFirebase(() => {
-    if (!firestore || !chat || chat.members.length === 0) return null;
-    return query(collection(firestore, 'users'), where('id', 'in', chat.members));
+    if (!firestore || !chat || !chat.members || chat.members.length === 0) return null;
+    const memberIds = chat.members.length > 30 ? chat.members.slice(0, 30) : chat.members;
+    return query(collection(firestore, 'userDirectory'), where('id', 'in', memberIds));
   }, [firestore, chat]);
 
   const { data: chatUsers } = useCollection<User>(chatUsersQuery);
 
-  const isDM = chat?.members.length === 2 && chat.isDM;
-  const otherUserIdInDM = isDM ? chat.members.find(id => id !== currentUser?.id) : null;
+  const isDM = chat?.isDM && chat?.members.length === 2;
+  const otherUserIdInDM = isDM ? chat?.members.find(id => id !== currentUser?.id) : null;
 
-  const headerContent = useMemo(() => {
-    if (!chat) return null;
-
-    if (isDM && otherUserIdInDM) {
-        return <DMHeaderContent otherUserId={otherUserIdInDM} />
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputValue.trim() && chat && currentUser && firestore) {
+      const messagesColRef = collection(firestore, 'chats', chat.id, 'messages');
+      addDocumentNonBlocking(messagesColRef, {
+        authorId: currentUser.id,
+        content: inputValue.trim(),
+        timestamp: serverTimestamp(),
+        readStatus: null,
+      });
+      setInputValue('');
     }
-    
-    if (!isDM && chatUsers) {
-        return (
-            <>
-                <GroupAvatar userIds={chat.members} allUsers={chatUsers} />
-                <div>
-                    <h2 className="font-headline text-lg font-semibold">{chat.name}</h2>
-                    <p className="text-sm text-muted-foreground">
-                    {chat.description}
-                    </p>
-                </div>
-            </>
-        )
-    }
+  };
 
-    return (
-        <div className='flex items-center gap-3'>
-            <Skeleton className='size-9 rounded-full'/>
-            <div className='space-y-1'>
-                <Skeleton className='h-4 w-32' />
-                <Skeleton className='h-3 w-48' />
-            </div>
-        </div>
-    );
-  }, [isDM, otherUserIdInDM, chat, chatUsers, currentUser]);
-
+  const handleAutomationsUpdate = (chatId: string, updatedAutomations: any) => {
+    if (!firestore) return;
+    const chatRef = doc(firestore, 'chats', chatId);
+    updateDocumentNonBlocking(chatRef, { automations: updatedAutomations });
+  };
+  
   const markMessagesAsRead = async () => {
     if (!chat || !currentUser || messagesLoading || !messages || !firestore) return;
 
@@ -186,25 +175,37 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
     }
   }, [messages, chat?.id]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputValue.trim() && chat && currentUser && firestore) {
-      const messagesColRef = collection(firestore, 'chats', chat.id, 'messages');
-      addDocumentNonBlocking(messagesColRef, {
-        authorId: currentUser.id,
-        content: inputValue.trim(),
-        timestamp: serverTimestamp(),
-        readStatus: null,
-      });
-      setInputValue('');
-    }
-  };
+  const headerContent = useMemo(() => {
+    if (!chat) return null;
 
-  const handleAutomationsUpdate = (chatId: string, updatedAutomations: any) => {
-    if (!firestore) return;
-    const chatRef = doc(firestore, 'chats', chatId);
-    updateDocumentNonBlocking(chatRef, { automations: updatedAutomations });
-  };
+    if (isDM && otherUserIdInDM) {
+        return <DMHeaderContent otherUserId={otherUserIdInDM} />
+    }
+    
+    if (!isDM && chatUsers) {
+        return (
+            <>
+                <GroupAvatar userIds={chat.members} allUsers={chatUsers} />
+                <div>
+                    <h2 className="font-headline text-lg font-semibold">{chat.name}</h2>
+                    <p className="text-sm text-muted-foreground">
+                    {chat.description}
+                    </p>
+                </div>
+            </>
+        )
+    }
+
+    return (
+        <div className='flex items-center gap-3'>
+            <Skeleton className='size-9 rounded-full'/>
+            <div className='space-y-1'>
+                <Skeleton className='h-4 w-32' />
+                <Skeleton className='h-3 w-48' />
+            </div>
+        </div>
+    );
+  }, [isDM, otherUserIdInDM, chat, chatUsers, currentUser]);
 
   if (!chat) {
     return (
