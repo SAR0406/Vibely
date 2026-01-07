@@ -386,7 +386,7 @@ export default function SignupPage() {
                         name="password"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel>Password</Label>
                             <FormControl>
                             <Input type="password" {...field} />
                             </FormControl>
