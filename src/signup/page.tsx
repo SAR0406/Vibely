@@ -9,7 +9,6 @@ import * as z from 'zod';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -104,8 +103,6 @@ export default function SignupPage() {
 
 
   useEffect(() => {
-    // If we are in the second step of Google signup and the user refreshes or navigates away,
-    // they should be logged out to avoid being in a weird state.
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isGoogleStep2) {
         auth.signOut();
@@ -122,13 +119,11 @@ export default function SignupPage() {
   }, [isGoogleStep2, auth]);
 
   useEffect(() => {
-    // Redirect authenticated users (who are not in the middle of Google signup) to chat
     if (!isUserLoading && user && !isGoogleStep2) {
       router.push('/chat');
     }
   }, [user, isUserLoading, router, isGoogleStep2]);
 
-  // When a user signs in with Google, pre-fill the second form with their display name
   useEffect(() => {
     if(isGoogleStep2 && user) {
         googleForm.setValue('name', user.displayName || '');
@@ -319,8 +314,8 @@ export default function SignupPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <Card>
-          <CardHeader className="text-center">
-            <div className="mb-4 flex justify-center">
+          <CardHeader className="text-center space-y-4">
+            <div className="flex justify-center">
               <Link href="/" className="flex items-center gap-2">
                 <ChevronsRight className="h-10 w-10 text-primary" />
               </Link>
@@ -328,9 +323,6 @@ export default function SignupPage() {
             <CardTitle className="font-headline text-3xl">
               {isGoogleStep2 ? 'Almost there...' : 'Create an Account'}
             </CardTitle>
-            <CardDescription>
-              {isGoogleStep2 ? 'Just a few more details and you\'re all set.' : 'Enter your information to get started with Vibely.'}
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {isGoogleStep2 ? (
@@ -479,5 +471,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-    

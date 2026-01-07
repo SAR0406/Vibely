@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { MessageSquare, Users, LogOut, Search, Bell, UserPlus, Settings } from 'lucide-react';
+import { MessageSquare, Users, LogOut, Search, Bell, UserPlus, Settings, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { Chat, User as UserType, Message, ChatRequest } from '@/lib/types';
@@ -37,6 +37,7 @@ import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../ui/dropdown-menu';
+import { CreateChatDialog } from './create-chat-dialog';
 
 const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -115,7 +116,7 @@ const DMMenuItem = ({ chat, isActive, onSelect }: { chat: Chat, isActive: boolea
                     <UserAvatar src={otherUser.avatarUrl} name={otherUser.fullName || ''} isOnline={otherUser.online}/>
                     {hasUnread && <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-background" />}
                 </div>
-                <span>{otherUser.fullName}</span>
+                <span className='text-primary'>{otherUser.fullName}</span>
             </SidebarMenuButton>
         </SidebarMenuItem>
     )
@@ -126,6 +127,7 @@ export default function ChatLayout() {
   const [isFindPeopleOpen, setIsFindPeopleOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isRequestsOpen, setIsRequestsOpen] = useState(false);
+  const [isCreateChatOpen, setIsCreateChatOpen] = useState(false);
   const [selectedUserForProfile, setSelectedUserForProfile] = useState<UserType | null>(null);
 
   const router = useRouter();
@@ -183,7 +185,6 @@ export default function ChatLayout() {
   
     const unsubscribe = onValue(connectedRef, (snap) => {
       if (snap.val() === true) {
-        // We're connected.
         onDisconnect(userStatusDatabaseRef).set(isOfflineForDatabase).then(() => {
           set(userStatusDatabaseRef, isOnlineForDatabase);
           updateDocumentNonBlocking(userStatusFirestoreRef, isOnlineForFirestore);
@@ -193,7 +194,6 @@ export default function ChatLayout() {
   
     return () => {
       unsubscribe();
-      // On unmount, if user is still logged in, set them to offline.
       if (auth.currentUser) {
         updateDocumentNonBlocking(userStatusFirestoreRef, isOfflineForFirestore);
         set(userStatusDatabaseRef, isOfflineForDatabase);
@@ -230,10 +230,10 @@ export default function ChatLayout() {
     if (!firestore) return;
 
     const isDM = newChatData.isDM;
-    // For DMs, create a consistent ID
+    
     const chatId = isDM 
       ? `dm-${newChatData.members.sort().join('-')}`
-      : `chat-${Date.now()}`;
+      : doc(collection(firestore, 'chats')).id; // Generate a unique ID for group chats
       
     const chatRef = doc(firestore, 'chats', chatId);
     const chatWithId = { ...newChatData, id: chatId };
@@ -241,12 +241,13 @@ export default function ChatLayout() {
     setDocumentNonBlocking(chatRef, chatWithId, {merge: false});
 
     handleSelectChat(chatId);
+    setIsCreateChatOpen(false); // Close dialog after creation
   };
 
   const handleShowUserProfile = (userToShow: UserType) => {
     setSelectedUserForProfile(userToShow);
     setIsProfileOpen(true);
-    setIsFindPeopleOpen(false); // Close search dialog when profile opens
+    setIsFindPeopleOpen(false);
   };
   
   const handleStartDirectMessage = (otherUser: UserType) => {
@@ -314,10 +315,17 @@ export default function ChatLayout() {
                 collapsible="offcanvas"
                 className="border-r"
               >
-                <SidebarHeader className="h-16 items-center justify-center p-0">
-                  <Link href="/">
+                <SidebarHeader className="h-16 items-center justify-between p-2">
+                  <Link href="/" className='p-2'>
                     <ChevronsRight className="size-8 text-primary" />
                   </Link>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsFindPeopleOpen(true)}
+                  >
+                    <Search className="size-5" />
+                  </Button>
                 </SidebarHeader>
                 <SidebarContent className="p-2">
                   <div className="flex flex-col gap-4">
@@ -393,18 +401,14 @@ export default function ChatLayout() {
                   </div>
                 </SidebarContent>
                 <SidebarFooter className="p-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-center gap-2"
-                        onClick={() => setIsFindPeopleOpen(true)}
-                      >
-                        <UserPlus className="size-4" />
-                        <span>New Chat</span>
-                      </Button>
-                    </TooltipTrigger>
-                  </Tooltip>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-center gap-2"
+                    onClick={() => setIsCreateChatOpen(true)}
+                  >
+                    <UserPlus className="size-4" />
+                    <span>New Chat</span>
+                  </Button>
 
                   <div className="flex flex-col items-center gap-2 group-data-[collapsible=expanded]:items-stretch">
                     <ThemeSwitcher />
@@ -418,7 +422,7 @@ export default function ChatLayout() {
                                         isOnline={currentUser.online}
                                     />
                                     <div className="flex-1 text-left">
-                                        <p className="text-sm font-semibold">
+                                        <p className="text-sm font-semibold text-primary">
                                         {currentUser.name}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
@@ -441,8 +445,8 @@ export default function ChatLayout() {
                                     )}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => currentUser && handleShowUserProfile(currentUser)}>
-                                    <UserPlus className="mr-2 size-4" />
-                                    <span>Profile</span>
+                                    <Edit className="mr-2 size-4" />
+                                    <span>Edit Profile</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={handleLogout}>
@@ -478,10 +482,17 @@ export default function ChatLayout() {
             <FindPeopleDialog
               isOpen={isFindPeopleOpen}
               onOpenChange={setIsFindPeopleOpen}
-              onCreateChat={handleCreateChat}
               onSelectUser={handleShowUserProfile}
               currentUser={currentUser}
             />
+            )}
+            {currentUser && (
+                <CreateChatDialog
+                    isOpen={isCreateChatOpen}
+                    onOpenChange={setIsCreateChatOpen}
+                    onCreateChat={handleCreateChat}
+                    currentUser={currentUser}
+                />
             )}
             {currentUser && (
               <>
