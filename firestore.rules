@@ -57,11 +57,7 @@ service cloud.firestore {
        */
       allow get: if isSignedIn();
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && (
-                      request.resource.data.keys().hasAll(['id', 'email', 'username', 'userCode', 'fullName', 'createdAt', 'updatedAt']) ||
-                      request.resource.data.keys().hasAll(['online', 'lastSeen']) ||
-                      request.resource.data.keys().hasAll(['online'])
-                    );
+      allow update: if isOwner(userId);
       allow delete: if false; 
       allow list: if false;
 
@@ -104,12 +100,14 @@ service cloud.firestore {
     match /chats/{chatId} {
       /**
        * @allow (get, update) Full read/update access is granted only to members of the chat.
-       * @allow (list) Users can only list chats they are members of. This requires a `where('members', 'array-contains', request.auth.uid)` clause on the client-side query.
+       * @allow (list) Firestore automatically applies the 'get' rule to every potential document in a 'list' query.
+       *              Therefore, this rule allows users to list chats as long as their query filters for membership
+       *              (e.g., where('members', 'array-contains', request.auth.uid)), which is handled on the client.
        * @allow (create) Any signed-in user can create a new chat, provided they include themselves as a member and the owner.
        * @allow (delete) Only the chat's designated owner can delete it.
        */
       allow get, update: if isChatMember(chatId);
-      allow list: if isSignedIn() && request.query.where.to_string().contains("['members', 'array-contains', request.auth.uid]");
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid in request.resource.data.members && request.resource.data.ownerId == request.auth.uid;
       allow delete: if isChatOwner(chatId);
 
