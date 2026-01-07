@@ -51,6 +51,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     background: '#ffffff',
     accent: '#f3f4f6',
   });
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('app-theme');
@@ -66,9 +67,12 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     if (storedCustomColors) {
       setCustomColorsState(JSON.parse(storedCustomColors));
     }
+    setMounted(true);
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
+
     const currentTheme = themes.find(t => t.id === themeId);
     if (!currentTheme) return;
 
@@ -105,7 +109,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('app-theme', themeId);
     localStorage.setItem('app-theme-mode', isDarkMode ? 'dark' : 'light');
 
-  }, [themeId, isDarkMode, customColors]);
+  }, [themeId, isDarkMode, customColors, mounted]);
 
   const theme = useMemo(() => themes.find(t => t.id === themeId) || themes[0], [themeId]);
 
@@ -126,8 +130,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [themeId]);
 
+  const value = { theme, setTheme: handleSetTheme, isDarkMode, toggleDarkMode, customColors, setCustomColors };
+
+  if (!mounted) {
+    return null;
+  }
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme: handleSetTheme, isDarkMode, toggleDarkMode, customColors, setCustomColors }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
