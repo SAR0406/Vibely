@@ -16,8 +16,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Channel, Automation, User } from '@/lib/types';
 import { enableAdjustAutomations } from '@/ai/flows/enable-adjust-automations';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
 
 
 type AutomationSettingsDialogProps = {
@@ -40,12 +40,13 @@ export function AutomationSettingsDialog({
   const { toast } = useToast();
   const firestore = useFirestore();
   
-  const allUsersQuery = useMemo(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'users');
-  }, [firestore]);
+  const channelUsersQuery = useMemoFirebase(() => {
+    if (!firestore || !channel || channel.members.length === 0) return null;
+    // Fetch documents for users who are members of the channel
+    return query(collection(firestore, 'users'), where('id', 'in', channel.members));
+  }, [firestore, channel]);
 
-  const { data: allUsers } = useCollection<User>(allUsersQuery);
+  const { data: channelUsers } = useCollection<User>(channelUsersQuery);
 
   if (!channel) return null;
 
@@ -79,7 +80,7 @@ export function AutomationSettingsDialog({
       }, {} as Record<string, string>);
 
       const memberList = channel.members.map(
-        (id) => allUsers?.find((u) => u.id === id)?.fullName || 'Unknown'
+        (id) => channelUsers?.find((u) => u.id === id)?.fullName || 'Unknown'
       );
 
       await enableAdjustAutomations({

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Paperclip, Send, Settings, Smile } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { collection, query, orderBy, doc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, where } from 'firebase/firestore';
 
 import { cn } from '@/lib/utils';
 import type { Channel, Message, User } from '@/lib/types';
@@ -30,42 +30,6 @@ function useMessages(channelId: string | null) {
 
   return useCollection<Message>(messagesQuery);
 }
-
-function useChannelMembers(memberIds: string[] = []) {
-  const firestore = useFirestore();
-  const [members, setMembers] = useState<User[]>([]);
-
-  // This is a simplified way to fetch multiple documents.
-  // For production, you might want a more optimized approach.
-  useEffect(() => {
-    if (!firestore || memberIds.length === 0) {
-      setMembers([]);
-      return;
-    }
-
-    const unsubscribes = memberIds.map(id => {
-      const docRef = doc(firestore, 'users', id);
-      // This is not efficient as it creates multiple listeners.
-      // A better approach would be to use a hook that can batch these reads.
-      const unsub = useDoc<User>(docRef).data; 
-      // This is a placeholder for where you'd aggregate the results.
-      // `useDoc` would need to be adapted or a `useDocs` hook created.
-      return () => {};
-    });
-
-    // In a real app, you would aggregate the results from multiple doc reads.
-    // For now, this logic is simplified.
-    // This is a known limitation of this quick implementation.
-
-    return () => unsubscribes.forEach(unsub => unsub());
-  }, [firestore, memberIds]);
-
-  // Placeholder: this part of the logic is not fully implemented
-  // and would require a more complex hook (`useDocs`).
-  // Returning an empty array for now.
-  return { data: members, isLoading: false };
-}
-
 
 function AvatarGroup({ userIds, allUsers }: { userIds: string[], allUsers: User[] }) {
     const displayedUsers = userIds
@@ -104,12 +68,13 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
 
   const { data: messages } = useMessages(channel?.id || null);
 
-  const allUsersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'users');
-  }, [firestore]);
+  const channelUsersQuery = useMemoFirebase(() => {
+    if (!firestore || !channel || channel.members.length === 0) return null;
+    // Fetch documents for users who are members of the channel
+    return query(collection(firestore, 'users'), where('id', 'in', channel.members));
+  }, [firestore, channel]);
 
-  const { data: allUsers, isLoading: usersLoading } = useCollection<User>(allUsersQuery);
+  const { data: channelUsers } = useCollection<User>(channelUsersQuery);
   
   useEffect(() => {
     if (scrollViewportRef.current) {
@@ -173,7 +138,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
     >
       <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background/80 p-4 backdrop-blur-sm">
         <div className="flex items-center gap-4">
-          {allUsers && <AvatarGroup userIds={channel.members} allUsers={allUsers} />}
+          {channelUsers && <AvatarGroup userIds={channel.members} allUsers={channelUsers} />}
           <div>
             <h2 className="font-headline text-lg font-semibold">{channel.name}</h2>
             <p className="text-sm text-muted-foreground">
@@ -190,8 +155,8 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
           <div className="space-y-6 p-4 md:p-8">
-            {messages && allUsers && messages.map((message, index) => {
-              const author = allUsers.find((u) => u.id === message.authorId);
+            {messages && channelUsers && messages.map((message, index) => {
+              const author = channelUsers.find((u) => u.id === message.authorId);
               if (!author) return null; // Or a placeholder
               return (
                 <ChatMessage
