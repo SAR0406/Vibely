@@ -142,16 +142,20 @@ export default function SignupPage() {
     email: string,
     fullName: string,
     username: string,
-    avatarUrl?: string
+    avatarUrl?: string | null
   ) => {
     const userDocRef = doc(firestore, 'users', uid);
+    const userDirRef = doc(firestore, 'userDirectory', uid);
     const randomAvatar =
       PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)]
         .imageUrl;
     
+    const finalAvatarUrl = avatarUrl || randomAvatar;
+    
     // Generate a unique user code
     const userCode = `${username}#${Math.floor(1000 + Math.random() * 9000)}`;
 
+    // Create user profile
     setDocumentNonBlocking(
       userDocRef,
       {
@@ -160,11 +164,23 @@ export default function SignupPage() {
         fullName,
         username,
         userCode,
-        avatarUrl: avatarUrl || randomAvatar,
+        avatarUrl: finalAvatarUrl,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       { merge: true }
+    );
+      
+    // Create user directory entry for search
+    setDocumentNonBlocking(
+      userDirRef,
+      {
+        id: uid,
+        userCode,
+        fullName,
+        avatarUrl: finalAvatarUrl,
+      },
+      { merge: false } // Use merge: false for new doc
     );
   };
 

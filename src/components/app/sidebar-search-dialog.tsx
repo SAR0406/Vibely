@@ -38,12 +38,13 @@ export function SidebarSearchDialog({
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !debouncedSearchTerm) return null;
     
+    // Query the userDirectory collection now
     return query(
-      collection(firestore, 'users'),
-      where('userCode', '==', debouncedSearchTerm),
-      where('id', '!=', currentUser.id)
+      collection(firestore, 'userDirectory'),
+      where('userCode', '>=', debouncedSearchTerm),
+      where('userCode', '<=', debouncedSearchTerm + '\uf8ff')
     );
-  }, [firestore, debouncedSearchTerm, currentUser.id]);
+  }, [firestore, debouncedSearchTerm]);
 
   const { data: users, isLoading } = useCollection<User>(usersQuery);
 
@@ -52,6 +53,14 @@ export function SidebarSearchDialog({
       setSearchTerm('');
     }
   }, [isOpen]);
+
+  const handleSelect = (user: User) => {
+    onSelectUser(user);
+    onOpenChange(false);
+  }
+
+  // Filter out the current user from search results
+  const searchResults = users?.filter(user => user.id !== currentUser.id);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -77,23 +86,22 @@ export function SidebarSearchDialog({
                 <Loader2 className="size-6 animate-spin text-muted-foreground" />
               </div>
             )}
-            {!isLoading && debouncedSearchTerm && (!users || users.length === 0) && (
+            {!isLoading && debouncedSearchTerm && (!searchResults || searchResults.length === 0) && (
               <p className="py-8 text-center text-sm text-muted-foreground">
                 No user found with that code.
               </p>
             )}
             <div className="space-y-2">
-              {users && users.map((user) => (
+              {searchResults && searchResults.map((user) => (
                 <Button
                   key={user.id}
                   variant="ghost"
                   className="flex h-auto w-full cursor-pointer items-center justify-start gap-3 p-2 text-left"
-                  onClick={() => onSelectUser(user)}
+                  onClick={() => handleSelect(user)}
                 >
                   <UserAvatar
                     src={user.avatarUrl}
                     name={user.fullName || 'User'}
-                    isOnline={user.online}
                   />
                   <div className="flex-1">
                     <p className="font-semibold">{user.fullName}</p>

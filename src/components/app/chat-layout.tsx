@@ -13,15 +13,16 @@ import {
   SidebarMenuButton,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { MessageSquare, PlusCircle, Users, LogOut, Search } from 'lucide-react';
+import { MessageSquare, PlusCircle, Users, LogOut, Search, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import type { Channel, User as UserType, Message } from '@/lib/types';
+import type { Channel, User as UserType, Message, ChatRequest } from '@/lib/types';
 import { ChatView } from './chat-view';
 import { UserAvatar } from './user-avatar';
 import { CreateChannelDialog } from './create-channel-dialog';
 import { SidebarSearchDialog } from './sidebar-search-dialog';
 import { UserProfileDialog } from './user-profile-dialog';
+import { ChatRequestsDialog } from './chat-requests-dialog';
 import { Button } from '../ui/button';
 import { ThemeSwitcher } from './theme-switcher';
 import {
@@ -35,6 +36,7 @@ import { doc, collection, query, where, updateDoc, serverTimestamp } from 'fireb
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Badge } from '../ui/badge';
 
 const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -124,6 +126,7 @@ export default function ChatLayout() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isRequestsOpen, setIsRequestsOpen] = useState(false);
   const [selectedUserForProfile, setSelectedUserForProfile] = useState<UserType | null>(null);
 
   const router = useRouter();
@@ -140,8 +143,14 @@ export default function ChatLayout() {
     if (!user) return null;
     return doc(firestore, 'users', user.uid);
   }, [user, firestore]);
+  
+  const chatRequestsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, `users/${user.uid}/chatRequests`), where('status', '==', 'pending'));
+  }, [user, firestore]);
 
   const { data: currentUserProfile } = useDoc<UserType>(userDocRef);
+  const { data: chatRequests } = useCollection<ChatRequest>(chatRequestsQuery);
 
   useEffect(() => {
     if (user && firestore) {
@@ -240,6 +249,7 @@ export default function ChatLayout() {
       handleSelectChannel(channelId);
     }
     setIsProfileOpen(false);
+    setIsRequestsOpen(false);
   };
 
   const handleLogout = async () => {
@@ -411,6 +421,27 @@ export default function ChatLayout() {
                             <p className="text-xs text-muted-foreground">{currentUser.online ? 'Online' : 'Offline'}</p>
                         </div>
                       </div>
+                       <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="relative"
+                                onClick={() => setIsRequestsOpen(true)}
+                            >
+                                <Bell className="size-4" />
+                                {chatRequests && chatRequests.length > 0 && (
+                                    <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 justify-center rounded-full p-0 text-xs">{chatRequests.length}</Badge>
+                                )}
+                            </Button>
+                        </TooltipTrigger>
+                         <TooltipContent
+                          side="right"
+                          className="hidden group-data-[collapsible=icon]:block"
+                        >
+                          Chat Requests
+                        </TooltipContent>
+                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -458,12 +489,19 @@ export default function ChatLayout() {
           onCreateChannel={handleCreateChannel}
         />
         {currentUser && (
-            <SidebarSearchDialog
-                isOpen={isSearchOpen}
-                onOpenChange={setIsSearchOpen}
-                currentUser={currentUser}
-                onSelectUser={handleShowUserProfile}
-            />
+            <>
+                <SidebarSearchDialog
+                    isOpen={isSearchOpen}
+                    onOpenChange={setIsSearchOpen}
+                    currentUser={currentUser}
+                    onSelectUser={handleShowUserProfile}
+                />
+                <ChatRequestsDialog
+                    isOpen={isRequestsOpen}
+                    onOpenChange={setIsRequestsOpen}
+                    onStartChat={handleStartDirectMessage}
+                />
+            </>
         )}
         {selectedUserForProfile && (
             <UserProfileDialog

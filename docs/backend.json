@@ -54,6 +54,47 @@
       },
       "required": ["id", "email", "username", "userCode", "fullName", "createdAt", "updatedAt"]
     },
+    "UserDirectory": {
+      "title": "User Directory",
+      "description": "A simplified, publicly queryable list of users for search purposes.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The user's unique ID."
+        },
+        "userCode": {
+          "type": "string",
+          "description": "The user's unique, searchable code (e.g., username#1234)."
+        },
+        "fullName": {
+          "type": "string"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": ["id", "userCode", "fullName"]
+    },
+    "ChatRequest": {
+        "title": "Chat Request",
+        "description": "Represents a request from one user to start a chat with another.",
+        "type": "object",
+        "properties": {
+            "id": { "type": "string" },
+            "fromUserId": { "type": "string" },
+            "fromUserCode": { "type": "string" },
+            "fromFullName": { "type": "string" },
+            "fromAvatarUrl": { "type": "string", "format": "uri" },
+            "status": {
+                "type": "string",
+                "enum": ["pending", "accepted", "declined"]
+            },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "fromUserId", "fromUserCode", "fromFullName", "status", "createdAt"]
+    },
     "Channel": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Channel",
@@ -141,6 +182,14 @@
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Stores all user profile data. Each user's document is protected, and the collection can only be queried on indexed fields like 'userCode'."
+    },
+    "/userDirectory/{userId}": {
+        "schema": { "$ref": "#/entities/UserDirectory" },
+        "description": "A simplified, publicly queryable list of users for search purposes."
+    },
+    "/users/{userId}/chatRequests/{requestId}": {
+        "schema": { "$ref": "#/entities/ChatRequest" },
+        "description": "Stores incoming chat requests for a user."
     },
     "/channels/{channelId}": {
       "schema": { "$ref": "#/entities/Channel" },

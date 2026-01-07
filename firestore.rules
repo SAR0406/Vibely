@@ -58,7 +58,35 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow create, update: if isOwner(userId);
       allow delete: if false; 
-      allow list: if false; // IMPORTANT: Prevents listing all users.
+      allow list: if false;
+
+        // SUB-COLLECTION: chatRequests
+        match /chatRequests/{requestId} {
+            /**
+             * @allow (read, list, update) A user can only manage their own chat requests.
+             * @allow (create) Any authenticated user can create a chat request for another user.
+             * @allow (delete) Users can delete requests they have received.
+             */
+            allow read, list, update: if isOwner(userId);
+            allow create: if isSignedIn() && request.resource.data.fromUserId == request.auth.uid;
+            allow delete: if isOwner(userId);
+        }
+    }
+    
+    // --------------------------------------------------------------------------
+    //
+    // COLLECTION: userDirectory
+    //
+    // --------------------------------------------------------------------------
+    match /userDirectory/{userId} {
+        /**
+         * @allow (read, list) Any authenticated user can search the directory.
+         * @allow (create) A user can only create their own directory entry.
+         * @allow (update, delete) Not allowed to prevent tampering.
+         */
+        allow read, list: if isSignedIn();
+        allow create: if isOwner(userId);
+        allow update, delete: if false;
     }
 
 

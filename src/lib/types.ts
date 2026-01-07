@@ -42,3 +42,13 @@ export type Automation = {
   enabled: boolean;
   content: string;
 };
+
+export type ChatRequest = {
+    id: string;
+    fromUserId: string;
+    fromUserCode: string;
+    fromFullName: string;
+    fromAvatarUrl: string;
+    status: 'pending' | 'accepted' | 'declined';
+    createdAt: any;
+}
