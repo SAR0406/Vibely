@@ -359,4 +359,9 @@
     background: linear-gradient(to right, hsl(var(--primary)), hsl(330, 80%, 55%));
     color: hsl(var(--primary-foreground));
   }
+
+  :root:not(.dark) .text-primary {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(to right, hsl(var(--primary)), hsl(330, 80%, 55%));
+  }
 }
