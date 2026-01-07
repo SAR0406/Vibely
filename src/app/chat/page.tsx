@@ -12,11 +12,13 @@ function ChatPageContent() {
   const router = useRouter();
 
   useEffect(() => {
+    // If loading is finished and there's no user, redirect to login
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
 
+  // While loading auth state, show a full-screen loader
   if (isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -25,21 +27,21 @@ function ChatPageContent() {
     );
   }
 
+  // If there's an error, you might want to show an error message
   if (userError) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <p className="text-destructive">
-          Something went wrong. Please try refreshing.
-        </p>
-      </div>
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <p className="text-destructive">Something went wrong. Please try refreshing.</p>
+        </div>
     );
   }
 
+  // If user is authenticated, render the chat layout
   if (user) {
     return <ChatLayout />;
   }
 
-  // Fallback before navigation to login
+  // Fallback for the brief moment before redirection happens
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background">
       <Loader2 className="size-8 animate-spin text-primary" />
@@ -49,14 +51,12 @@ function ChatPageContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-          <Loader2 className="size-8 animate-spin text-primary" />
-        </div>
-      }
-    >
+    <Suspense fallback={
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    }>
       <ChatPageContent />
     </Suspense>
-  );
+  )
 }

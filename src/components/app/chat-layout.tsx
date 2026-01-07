@@ -31,7 +31,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAuth, useUser, useDoc, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, collection, query, where, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -76,7 +76,7 @@ const DMMenuItem = ({ chat, isActive, onSelect }: { chat: Chat, isActive: boolea
 
     const otherUserDocRef = useMemoFirebase(() => {
         if (!firestore || !otherUserId) return null;
-        return doc(firestore, 'users', otherUserId);
+        return doc(firestore, 'userDirectory', otherUserId);
     }, [firestore, otherUserId]);
 
     const { data: otherUser } = useDoc<UserType>(otherUserDocRef);
@@ -449,9 +449,9 @@ export default function ChatLayout() {
             </SidebarFooter>
           </Sidebar>
           
-          <main className="flex-1 flex flex-col">
+          <main className="flex flex-1 flex-col">
             <header className="absolute left-4 top-4 z-20">
-              <SidebarTrigger />
+                <SidebarTrigger />
             </header>
             <ChatView
               key={selectedChatId}
