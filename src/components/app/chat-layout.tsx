@@ -445,7 +445,7 @@ export default function ChatLayout() {
               </div>
             </SidebarFooter>
           </Sidebar>
-
+          <main className="flex-1 flex flex-col relative h-screen">
             <header className="absolute left-4 top-4 z-20">
               <SidebarTrigger />
             </header>
@@ -454,6 +454,7 @@ export default function ChatLayout() {
               currentUser={currentUser}
               chat={selectedChat || null}
             />
+          </main>
         </div>
         <CreateChatDialog
           isOpen={isCreateOpen}

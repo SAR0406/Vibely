@@ -117,8 +117,13 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
 
   const { data: chatUsers } = useCollection<User>(chatUsersQuery);
 
-  const isDM = chat?.isDM && chat?.members.length === 2;
-  const otherUserIdInDM = isDM && chat?.members.find(id => id !== currentUser?.id);
+  const isDM = chat?.isDM && chat.members.length === 2;
+  const otherUserIdInDM = useMemo(() => {
+    if (isDM && chat && currentUser) {
+      return chat.members.find(id => id !== currentUser.id);
+    }
+    return null;
+  }, [isDM, chat, currentUser]);
 
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -207,7 +212,7 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
             </div>
         </div>
     );
-  }, [isDM, otherUserIdInDM, chat, chatUsers, currentUser]);
+  }, [isDM, otherUserIdInDM, chat, chatUsers]);
 
   if (!chat || !currentUser) {
     return (
@@ -241,7 +246,7 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
       transition={{ duration: 0.5 }}
       className="flex h-full flex-col bg-muted/30"
     >
-      <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background/80 p-4 backdrop-blur-sm">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background/80 p-4 backdrop-blur-sm pl-16">
         <div className="flex items-center gap-4">
           {headerContent}
         </div>
