@@ -1,23 +1,24 @@
+
 {
   "entities": {
-    "User": {
+    "UserProfile": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "User",
+      "title": "User Profile",
       "type": "object",
-      "description": "Represents a user within the Vibely application.",
+      "description": "Represents the publicly visible and privately owned data for a user in the application.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the User entity."
+          "description": "The user's unique ID (matches Firebase Auth UID)."
         },
         "email": {
           "type": "string",
-          "description": "User's email address.",
+          "description": "User's email address. Should only be visible to the user themselves.",
           "format": "email"
         },
         "username": {
           "type": "string",
-          "description": "The username chosen by the user."
+          "description": "The public username for the user."
         },
         "fullName": {
           "type": "string",
@@ -27,6 +28,15 @@
           "type": "string",
           "description": "URL of the user's avatar image.",
           "format": "uri"
+        },
+        "online": {
+            "type": "boolean",
+            "description": "Indicates if the user is currently online."
+        },
+        "lastSeen": {
+            "type": "string",
+            "description": "Timestamp of when the user was last active.",
+            "format": "date-time"
         },
         "createdAt": {
           "type": "string",
@@ -39,177 +49,103 @@
           "format": "date-time"
         }
       },
-      "required": [
-        "id",
-        "email",
-        "username",
-        "fullName",
-        "createdAt",
-        "updatedAt"
-      ]
+      "required": ["id", "email", "username", "fullName", "createdAt", "updatedAt"]
     },
     "Channel": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Channel",
       "type": "object",
-      "description": "Represents a channel within the Vibely application, where users can send messages.",
+      "description": "Represents a communication channel, which can be a public group, a private group, or a direct message (DM).",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the Channel entity."
+          "description": "Unique identifier for the channel."
         },
         "name": {
           "type": "string",
-          "description": "Name of the channel."
+          "description": "Display name of the channel."
         },
         "description": {
           "type": "string",
-          "description": "Description of the channel."
+          "description": "A brief description of the channel's purpose."
         },
         "isPublic": {
           "type": "boolean",
-          "description": "Indicates whether the channel is public or private."
+          "description": "If true, the channel is discoverable. If false, it's private."
+        },
+        "isDM": {
+            "type": "boolean",
+            "description": "If true, this channel is a direct message between two or more users."
         },
         "ownerId": {
           "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Channel) ID of the user who owns the channel."
+          "description": "The UID of the user who owns and manages the channel."
+        },
+        "members": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "An array of user UIDs who are members of this channel. Used for security rules."
+        },
+        "automations": {
+            "type": "array",
+            "items": { "type": "object" },
+            "description": "Configuration for any AI automations for this channel."
         },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp indicating when the channel was created.",
           "format": "date-time"
         },
         "updatedAt": {
           "type": "string",
-          "description": "Timestamp indicating when the channel was last updated.",
           "format": "date-time"
         }
       },
-      "required": [
-        "id",
-        "name",
-        "isPublic",
-        "ownerId",
-        "createdAt",
-        "updatedAt"
-      ]
+      "required": ["id", "name", "ownerId", "members", "isPublic", "isDM", "createdAt", "updatedAt"]
     },
     "Message": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Message",
       "type": "object",
-      "description": "Represents a message sent within a channel.",
+      "description": "A single message within a channel.",
       "properties": {
-        "id": {
+        "id": { "type": "string" },
+        "authorId": {
           "type": "string",
-          "description": "Unique identifier for the Message entity."
-        },
-        "channelId": {
-          "type": "string",
-          "description": "Reference to Channel. (Relationship: Channel 1:N Message) ID of the channel the message belongs to."
-        },
-        "senderId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Message) ID of the user who sent the message."
+          "description": "The UID of the user who sent the message."
         },
         "content": {
           "type": "string",
-          "description": "Content of the message."
+          "description": "The text content of the message."
         },
-        "createdAt": {
+        "timestamp": {
           "type": "string",
-          "description": "Timestamp indicating when the message was sent.",
+          "description": "The server timestamp when the message was sent.",
           "format": "date-time"
         },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the message was last updated.",
-          "format": "date-time"
+        "readStatus": {
+            "type": ["string", "null"],
+            "enum": ["read", null],
+            "description": "Indicates if the message has been read by recipients."
         }
       },
-      "required": [
-        "id",
-        "channelId",
-        "senderId",
-        "content",
-        "createdAt",
-        "updatedAt"
-      ]
-    },
-    "Attachment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Attachment",
-      "type": "object",
-      "description": "Represents an attachment associated with a message.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Attachment entity."
-        },
-        "messageId": {
-          "type": "string",
-          "description": "Reference to Message. (Relationship: Message 1:N Attachment)"
-        },
-        "url": {
-          "type": "string",
-          "description": "URL of the attached file.",
-          "format": "uri"
-        },
-        "filename": {
-          "type": "string",
-          "description": "Name of the attached file."
-        },
-        "mimeType": {
-          "type": "string",
-          "description": "MIME type of the attached file."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the attachment was uploaded.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "messageId",
-        "url",
-        "filename",
-        "mimeType",
-        "createdAt"
-      ]
+      "required": ["id", "authorId", "content", "timestamp"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "google.com",
-      "github.com"
-    ]
+    "providers": ["password", "google.com", "github.com"]
   },
   "firestore": {
     "/users/{userId}": {
-      "schema": {
-        "$ref": "#/entities/User"
-      },
-      "description": "Stores user profile information. Publicly readable, but only writable by the owner."
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores all user profile data. Each user's document is protected, but the collection is listable for user discovery features."
     },
     "/channels/{channelId}": {
-      "schema": {
-        "$ref": "#/entities/Channel"
-      },
-      "description": "Stores channel information. Access is controlled by the 'members' array."
+      "schema": { "$ref": "#/entities/Channel" },
+      "description": "Stores data for all channels. Access is controlled by the `members` array in each document."
     },
     "/channels/{channelId}/messages/{messageId}": {
-      "schema": {
-        "$ref": "#/entities/Message"
-      },
-      "description": "Stores messages for a specific channel. Access is inherited from the parent channel."
-    },
-    "/channels/{channelId}/messages/{messageId}/attachments/{attachmentId}": {
-      "schema": {
-        "$ref": "#/entities/Attachment"
-      },
-      "description": "Stores attachments for a specific message. Access is inherited from the parent channel."
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Stores all messages for a given channel. Access permissions are inherited from the parent channel."
     }
   }
 }

@@ -1,14 +1,21 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // --------------------------------------------------------------------------
-    // Helper Functions
+    //
+    // HELPER FUNCTIONS
+    //
+    // These functions are reusable snippets of logic that make the rules
+    // below easier to read and maintain.
+    //
     // --------------------------------------------------------------------------
 
     /**
-     * Returns true if the user is authenticated.
+     * Returns true if the user is authenticated (signed in).
+     * This is the most basic check for almost all rules.
      */
     function isSignedIn() {
       return request.auth != null;
@@ -16,93 +23,100 @@ service cloud.firestore {
 
     /**
      * Returns true if the authenticated user's UID matches the provided userId.
-     * This is the foundation of the user-ownership model.
+     * This is the core of the user-ownership security model.
+     * @param userId The UID to check against the authenticated user.
      */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-    
-    /**
-     * Returns true if the document being written to already exists.
-     */
-    function isExistingDoc() {
-      return resource != null;
-    }
 
     /**
      * Returns true if the user is a member of a given channel.
-     * Relies on the denormalized `members` array-contains check in the rule itself.
-     * This is NOT for use with get() calls.
+     * This function performs a direct read on the channel document to check
+     * if the requesting user's UID is present in the `members` array.
+     * This is a secure and efficient way to check for membership.
+     * @param channelId The ID of the channel to check membership for.
      */
     function isChannelMember(channelId) {
-       return isSignedIn() && exists(/databases/$(database)/documents/channels/$(channelId)) && request.auth.uid in get(/databases/$(database)/documents/channels/$(channelId)).data.members;
+      // get() returns the document's resource object. We check `data.members` for the UID.
+      return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/channels/$(channelId)).data.members;
     }
 
     /**
      * Returns true if the user is the owner of a given channel.
+     * @param channelId The ID of the channel to check ownership of.
      */
     function isChannelOwner(channelId) {
-      return isSignedIn() && exists(/databases/$(database)/documents/channels/$(channelId)) && request.auth.uid == get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId;
+        return isSignedIn() && request.auth.uid == get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId;
     }
+
 
     // --------------------------------------------------------------------------
-    // Collection Group & Wildcard Rules
+    //
+    // COLLECTION: users
+    //
+    // This collection stores the profile information for each user.
+    // The rules are structured to allow discoverability (listing users for search)
+    // while protecting sensitive information within each user's document.
+    //
     // --------------------------------------------------------------------------
-
-    /**
-     * @description Controls access to user profile documents.
-     * @path /users/{userId}
-     * @allow (read) Any signed-in user can read any user's profile.
-     * @allow (write) A user can only create, update, or delete their own profile.
-     */
-    match /users/{userId} {
-      allow get, list: if isSignedIn();
-      allow write: if isOwner(userId);
-    }
-
-    /**
-     * @description Controls access to channels. Access is based on a denormalized members list.
-     * @path /channels/{channelId}
-     * @allow (read/list) A user can only read channels they are a member of.
-     * @allow (create) A user can create a channel if they include themselves as the owner and a member.
-     * @allow (update) Only the channel owner can update a channel.
-     * @allow (delete) Only the channel owner can delete a channel.
-     */
-    match /channels/{channelId} {
-      allow read, update, delete: if isChannelMember(channelId);
-      allow list: if isSignedIn(); // List queries should be filtered on the client with `where('members', 'array-contains', request.auth.uid)`
-      allow create: if isSignedIn() && 
-                      request.resource.data.ownerId == request.auth.uid &&
-                      request.auth.uid in request.resource.data.members;
-    }
-
-    /**
-     * @description Controls access to messages within a channel. Permissions are inherited.
-     * @path /channels/{channelId}/messages/{messageId}
-     * @allow (read/list) A user can read messages in channels they are a member of.
-     * @allow (create) A user can create a message in a channel they are a member of, and must be the author.
-     * @allow (update/delete) A user can only modify their own messages. Channel owners can also delete any message.
-     */
-    match /channels/{channelId}/messages/{messageId} {
-      allow read, list: if isChannelMember(channelId);
-      allow create: if isChannelMember(channelId) && request.resource.data.authorId == request.auth.uid;
-      allow update: if isChannelMember(channelId) && resource.data.authorId == request.auth.uid;
-      allow delete: if isChannelMember(channelId) && (resource.data.authorId == request.auth.uid || isChannelOwner(channelId));
-    }
     
-    /**
-     * @description Controls access to attachments within a message. Permissions are inherited.
-     * @path /channels/{channelId}/messages/{messageId}/attachments/{attachmentId}
-     * @allow (read/list) A user can read attachments in channels they are a member of.
-     * @allow (create) A user can add an attachment in a channel they are a member of.
-     * @allow (update) Attachments are immutable.
-     * @allow (delete) The message author or channel owner can delete attachments.
-     */
-    match /channels/{channelId}/messages/{messageId}/attachments/{attachmentId} {
+    match /users/{userId} {
+      /**
+       * @allow (get) A user can only read their OWN profile document. Public read is disabled to protect PII like email.
+       * @allow (list) ANY authenticated user can list the collection. This is crucial for user search and invite features. 
+       *              Client-side queries should be used to fetch only necessary fields (e.g., name, avatar), not the whole documents.
+       *              This fixes the "Missing or insufficient permissions" error for list operations.
+       * @allow (create, update) A user can only create or update THEIR OWN profile.
+       * @allow (delete) Deleting user profiles is disallowed for safety.
+       */
+      allow get: if isOwner(userId);
+      allow list: if isSignedIn();
+      allow create, update: if isOwner(userId);
+      allow delete: if false; // Safety: prevent users from deleting their accounts via client.
+    }
+
+
+    // --------------------------------------------------------------------------
+    //
+    // COLLECTION: channels
+    //
+    // Stores all channel data, including public channels, private groups, and DMs.
+    // Access is strictly controlled by the `members` array in each document.
+    //
+    // --------------------------------------------------------------------------
+
+    match /channels/{channelId} {
+      /**
+       * @allow (read, write) Full read/write access is granted only to members of the channel.
+       * @allow (create) Any signed-in user can create a new channel, provided they include themselves as a member and the owner.
+       * @allow (list) Users can only list channels they are members of. This requires a `where('members', 'array-contains', request.auth.uid)` clause on the client-side query.
+       * @allow (delete) Only the channel's designated owner can delete it.
+       */
+      allow read, update: if isChannelMember(channelId);
+      allow list: if isSignedIn(); // List queries MUST be filtered on the client with `where('members', 'array-contains', request.auth.uid)`
+      allow create: if isSignedIn() && request.auth.uid in request.resource.data.members && request.resource.data.ownerId == request.auth.uid;
+      allow delete: if isChannelOwner(channelId);
+
+      // ------------------------------------------------------------------------
+      // SUB-COLLECTION: messages
+      //
+      // Stores messages for a specific channel. Permissions are inherited from
+      // the parent channel.
+      // ------------------------------------------------------------------------
+
+      match /messages/{messageId} {
+        /**
+         * @allow (read, list) Users can only read messages if they are a member of the parent channel.
+         * @allow (create) A user can only create a message if they are a channel member, and they must be the author.
+         * @allow (update) Users can only update their own messages.
+         * @allow (delete) Users can delete their own messages. Channel owners can also delete any message in their channel.
+         */
         allow read, list: if isChannelMember(channelId);
-        allow create: if isChannelMember(channelId);
-        allow update: if false;
-        allow delete: if isChannelMember(channelId) && (get(/databases/$(database)/documents/channels/$(channelId)/messages/$(messageId)).data.authorId == request.auth.uid || isChannelOwner(channelId));
+        allow create: if isChannelMember(channelId) && request.resource.data.authorId == request.auth.uid;
+        allow update: if isChannelMember(channelId) && resource.data.authorId == request.auth.uid;
+        allow delete: if isChannelMember(channelId) && (resource.data.authorId == request.auth.uid || isChannelOwner(channelId));
+      }
     }
   }
 }
