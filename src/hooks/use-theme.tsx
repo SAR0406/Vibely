@@ -45,7 +45,7 @@ const hexToHslString = (hex: string): string => {
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [themeId, setThemeId] = useState('vibely');
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const [customColors, setCustomColorsState] = useState<CustomColors>({
     primary: '#7c3aed',
     background: '#ffffff',
