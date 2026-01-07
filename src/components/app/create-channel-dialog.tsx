@@ -33,7 +33,7 @@ import {
 import { UserAvatar } from './user-avatar';
 import { Channel, User } from '@/lib/types';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, where, or, doc } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ScrollArea } from '../ui/scroll-area';
 
@@ -95,8 +95,8 @@ export function CreateChannelDialog({
   const { data: currentUserProfile } = useDoc<User>(currentUserDocRef);
 
   useEffect(() => {
-    if (currentUserProfile && !selectedUsers.some(u => u.id === currentUserProfile.id)) {
-        setSelectedUsers([currentUserProfile]);
+    if (currentUserProfile && selectedUsers.length === 0) {
+      setSelectedUsers([currentUserProfile]);
     }
    }, [currentUserProfile, selectedUsers]);
 
@@ -255,7 +255,7 @@ export function CreateChannelDialog({
                                 <UserAvatar src={u.avatarUrl} name={u.fullName || 'User'} className="mr-2" />
                                 <div>
                                     <p>{u.fullName}</p>
-                                    <p className='text-xs text-muted-foreground'>@{u.username}</p>
+                                    <p className='text-xs text-muted-foreground'>{u.userCode}</p>
                                 </div>
                             </Button>
                         ))}

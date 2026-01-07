@@ -98,7 +98,7 @@ export function SidebarSearchDialog({
                   <div className="flex-1">
                     <p className="font-semibold">{user.fullName}</p>
                     <p className="text-sm text-muted-foreground">
-                      @{user.username}
+                      {user.userCode}
                     </p>
                   </div>
                 </Button>

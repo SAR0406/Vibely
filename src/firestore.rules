@@ -61,8 +61,8 @@ service cloud.firestore {
     match /users {
         /**
          * @allow (list) This allows client-side queries for users, which is needed for search.
-         *              It is safe because we only expose non-sensitive information and client-side
-         *              queries should be specific (e.g., searching by userCode).
+         *              It is safe because the client-side queries should be specific and targeted
+         *              (e.g., searching by userCode), preventing mass-data scraping.
          */
         allow list: if isSignedIn();
     }
