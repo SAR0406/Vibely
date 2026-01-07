@@ -57,14 +57,14 @@ export function SidebarSearchDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-0">
         <DialogHeader className="p-6 pb-2">
-          <DialogTitle className="font-headline">Search Users</DialogTitle>
+          <DialogTitle className="font-headline">Find People</DialogTitle>
           <DialogDescription>
-            Find and start a conversation by entering a user's unique code (e.g. "username#1234").
+            Find and connect with others by searching for their unique user code.
           </DialogDescription>
         </DialogHeader>
         <div className="px-6">
           <Input
-            placeholder="Enter user code..."
+            placeholder="Enter user code (e.g. janedoe#1234)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full"

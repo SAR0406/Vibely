@@ -21,6 +21,7 @@ import { ChatView } from './chat-view';
 import { UserAvatar } from './user-avatar';
 import { CreateChannelDialog } from './create-channel-dialog';
 import { SidebarSearchDialog } from './sidebar-search-dialog';
+import { UserProfileDialog } from './user-profile-dialog';
 import { Button } from '../ui/button';
 import { ThemeSwitcher } from './theme-switcher';
 import {
@@ -122,6 +123,9 @@ const DMMenuItem = ({ channel, isActive, onSelect }: { channel: Channel, isActiv
 export default function ChatLayout() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [selectedUserForProfile, setSelectedUserForProfile] = useState<UserType | null>(null);
+
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -139,7 +143,6 @@ export default function ChatLayout() {
 
   const { data: currentUserProfile } = useDoc<UserType>(userDocRef);
 
-  // Real-time presence management
   useEffect(() => {
     if (user && firestore) {
       const userStatusRef = doc(firestore, 'users', user.uid);
@@ -198,6 +201,12 @@ export default function ChatLayout() {
 
     handleSelectChannel(channelId);
   };
+
+  const handleShowUserProfile = (userToShow: UserType) => {
+    setSelectedUserForProfile(userToShow);
+    setIsProfileOpen(true);
+    setIsSearchOpen(false); // Close search dialog when profile opens
+  };
   
   const handleStartDirectMessage = (otherUser: UserType) => {
     if (!currentUser) return;
@@ -216,19 +225,21 @@ export default function ChatLayout() {
       const channelRef = doc(firestore, 'channels', channelId);
       const newChannel: Channel = {
         id: channelId,
-        name: otherUser.fullName || otherUser.username || 'Direct Message', // This name is now a fallback
+        name: otherUser.fullName || otherUser.username || 'Direct Message',
         description: `Direct message with ${otherUser.fullName}`,
         members: [currentUser.id, otherUser.id],
         isDM: true,
         isPublic: false,
         ownerId: currentUser.id,
         automations: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
   
       setDocumentNonBlocking(channelRef, newChannel, { merge: false });
       handleSelectChannel(channelId);
     }
-    setIsSearchOpen(false);
+    setIsProfileOpen(false);
   };
 
   const handleLogout = async () => {
@@ -451,7 +462,15 @@ export default function ChatLayout() {
                 isOpen={isSearchOpen}
                 onOpenChange={setIsSearchOpen}
                 currentUser={currentUser}
-                onSelectUser={handleStartDirectMessage}
+                onSelectUser={handleShowUserProfile}
+            />
+        )}
+        {selectedUserForProfile && (
+            <UserProfileDialog
+                isOpen={isProfileOpen}
+                onOpenChange={setIsProfileOpen}
+                user={selectedUserForProfile}
+                onStartChat={handleStartDirectMessage}
             />
         )}
       </SidebarProvider>

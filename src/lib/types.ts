@@ -31,6 +31,8 @@ export type Channel = {
   isDM: boolean;
   ownerId: string;
   automations: Automation[];
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Automation = {

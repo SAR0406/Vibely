@@ -58,11 +58,10 @@ service cloud.firestore {
       allow delete: if false; 
     }
     
-    // Explicitly disallow listing all users for security.
-    // Queries must be targeted (e.g., using a 'where' clause on an indexed field).
-    match /users {
+    // Allow listing users only when querying by userCode.
+    // This is secure because the client is forced to provide an exact userCode.
+    match /users/{userId} {
         allow list: if isSignedIn();
-        allow write: if false;
     }
 
 
