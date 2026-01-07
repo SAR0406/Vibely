@@ -11,7 +11,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarInset,
 } from '@/components/ui/sidebar';
 import { MessageSquare, PlusCircle, Users, LogOut, Search, Bell } from 'lucide-react';
 import Link from 'next/link';
@@ -274,10 +273,10 @@ export default function ChatLayout() {
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <div className="flex min-h-screen bg-background text-foreground">
+        <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
           <Sidebar
-            variant="inset"
-            collapsible="icon"
+            variant="sidebar"
+            collapsible="offcanvas"
             className="border-r"
           >
             <SidebarHeader className="h-16 items-center justify-center p-0">
@@ -291,21 +290,15 @@ export default function ChatLayout() {
                     <TooltipTrigger asChild>
                         <Button
                         variant="ghost"
-                        className="w-full justify-start gap-2 group-data-[collapsible=icon]:justify-center"
+                        className="w-full justify-start gap-2"
                         onClick={() => setIsSearchOpen(true)}
                         >
                         <Search className="size-4" />
-                        <span className="group-data-[collapsible=icon]:hidden">
+                        <span>
                             Search
                         </span>
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent
-                        side="right"
-                        className="hidden group-data-[collapsible=icon]:block"
-                    >
-                        Search users
-                    </TooltipContent>
                 </Tooltip>
 
                 {chatsLoading ? (
@@ -318,7 +311,7 @@ export default function ChatLayout() {
                     <>
                         {publicChats.length > 0 && (
                         <div>
-                        <p className="px-2 text-xs font-semibold uppercase text-muted-foreground group-data-[collapsible=icon]:hidden">
+                        <p className="px-2 text-xs font-semibold uppercase text-muted-foreground">
                             Chats
                         </p>
                         <SidebarMenu>
@@ -327,7 +320,6 @@ export default function ChatLayout() {
                                 <SidebarMenuButton
                                 onClick={() => handleSelectChat(chat.id)}
                                 isActive={selectedChatId === chat.id}
-                                tooltip={chat.name}
                                 >
                                 <MessageSquare />
                                 <span>{chat.name}</span>
@@ -340,7 +332,7 @@ export default function ChatLayout() {
 
                         {groupDMs.length > 0 && (
                              <div>
-                             <p className="px-2 text-xs font-semibold uppercase text-muted-foreground group-data-[collapsible=icon]:hidden">
+                             <p className="px-2 text-xs font-semibold uppercase text-muted-foreground">
                                  Group DMs
                              </p>
                              <SidebarMenu>
@@ -349,7 +341,6 @@ export default function ChatLayout() {
                                      <SidebarMenuButton
                                      onClick={() => handleSelectChat(chat.id)}
                                      isActive={selectedChatId === chat.id}
-                                     tooltip={chat.name}
                                      >
                                      <Users />
                                      <span>{chat.name}</span>
@@ -362,7 +353,7 @@ export default function ChatLayout() {
 
                         {directMessages.length > 0 && (
                             <div>
-                                <p className="px-2 text-xs font-semibold uppercase text-muted-foreground group-data-[collapsible=icon]:hidden">
+                                <p className="px-2 text-xs font-semibold uppercase text-muted-foreground">
                                 Direct Messages
                                 </p>
                                 <SidebarMenu>
@@ -387,26 +378,20 @@ export default function ChatLayout() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="w-full justify-center gap-2 group-data-[collapsible=icon]:justify-center"
+                    className="w-full justify-center gap-2"
                     onClick={() => setIsCreateOpen(true)}
                   >
                     <PlusCircle className="size-4" />
-                    <span className="group-data-[collapsible=icon]:hidden">
+                    <span>
                       Create Chat
                     </span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="hidden group-data-[collapsible=icon]:block"
-                >
-                  Create Chat
-                </TooltipContent>
               </Tooltip>
 
               <div className="flex flex-col items-center gap-2 group-data-[collapsible=expanded]:items-stretch">
                 <ThemeSwitcher />
-                <div className="flex items-center gap-3 rounded-lg p-2 transition-colors duration-200 hover:bg-muted group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
+                <div className="flex items-center gap-3 rounded-lg p-2 transition-colors duration-200 hover:bg-muted">
                   {currentUser ? (
                     <>
                       <UserAvatar
@@ -414,7 +399,7 @@ export default function ChatLayout() {
                         name={currentUser.name}
                         isOnline={currentUser.online}
                       />
-                      <div className="flex-1 group-data-[collapsible=icon]:hidden">
+                      <div className="flex-1">
                         <p className="text-sm font-semibold">
                           {currentUser.name}
                         </p>
@@ -437,12 +422,6 @@ export default function ChatLayout() {
                                 )}
                             </Button>
                         </TooltipTrigger>
-                         <TooltipContent
-                          side="right"
-                          className="hidden group-data-[collapsible=icon]:block"
-                        >
-                          Chat Requests
-                        </TooltipContent>
                        </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -450,23 +429,16 @@ export default function ChatLayout() {
                             variant="ghost"
                             size="icon"
                             onClick={handleLogout}
-                            className="group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10"
                           >
                             <LogOut className="size-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent
-                          side="right"
-                          className="hidden group-data-[collapsible=icon]:block"
-                        >
-                          Logout
-                        </TooltipContent>
                       </Tooltip>
                     </>
                   ) : (
                     <div className='flex items-center gap-2 w-full'>
                         <Skeleton className="size-8 rounded-full" />
-                        <Skeleton className="h-4 w-24 group-data-[collapsible=icon]:hidden" />
+                        <Skeleton className="h-4 w-24" />
                     </div>
                   )}
                 </div>
@@ -474,7 +446,6 @@ export default function ChatLayout() {
             </SidebarFooter>
           </Sidebar>
 
-          <SidebarInset className="bg-muted/40">
             <header className="absolute left-4 top-4 z-20">
               <SidebarTrigger />
             </header>
@@ -483,7 +454,6 @@ export default function ChatLayout() {
               currentUser={currentUser}
               chat={selectedChat || null}
             />
-          </SidebarInset>
         </div>
         <CreateChatDialog
           isOpen={isCreateOpen}
