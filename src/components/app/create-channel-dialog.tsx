@@ -33,7 +33,7 @@ import {
 import { UserAvatar } from './user-avatar';
 import { Channel, User } from '@/lib/types';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Channel name must be at least 3 characters.'),
@@ -85,6 +85,14 @@ export function CreateChannelDialog({
       form.setValue('members', [user.uid]);
     }
   }, [user, form]);
+
+   useEffect(() => {
+    if (isOpen) {
+        form.reset({ name: '', members: user ? [user.uid] : []});
+        setSuggestions(null);
+        setEnabledAutomations({});
+    }
+   }, [isOpen, user, form]);
 
   const channelName = form.watch('name');
   const selectedMembers = form.watch('members');
@@ -150,8 +158,6 @@ export function CreateChannelDialog({
     };
     onCreateChannel(newChannel);
     onOpenChange(false);
-    form.reset({ name: '', members: user ? [user.uid] : []});
-    setSuggestions(null);
   };
 
   return (
@@ -238,8 +244,8 @@ export function CreateChannelDialog({
                 )}
             </div>
 
-            <DialogFooter className="col-span-1 md:col-span-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <DialogFooter className="md:col-span-2 mt-4">
+              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
               <Button type="submit">Create Channel</Button>
             </DialogFooter>
           </form>
