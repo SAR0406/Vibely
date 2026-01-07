@@ -32,7 +32,7 @@ export function LandingPageThemeSwitcher() {
              <div className="flex items-center gap-2">
               <div
                 className="size-4 rounded-full border"
-                style={{ backgroundColor: t.darkColors?.primary || 'hsl(var(--primary))' }}
+                style={{ backgroundColor: t.lightColors?.primary || 'hsl(var(--primary))' }}
               ></div>
               {t.name}
             </div>
