@@ -32,9 +32,8 @@ import {
 } from '@/ai/flows/channel-assistant-suggestions';
 import { UserAvatar } from './user-avatar';
 import { Channel, User } from '@/lib/types';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, or } from 'firebase/firestore';
-import { Skeleton } from '../ui/skeleton';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, query, where, or, doc } from 'firebase/firestore';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ScrollArea } from '../ui/scroll-area';
 
@@ -80,7 +79,7 @@ export function CreateChannelDialog({
   });
 
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore || !debouncedSearchTerm) return null;
+    if (!firestore || !debouncedSearchTerm) return null; // Only search when there's a term
     const term = debouncedSearchTerm.toLowerCase();
     return query(
       collection(firestore, 'users'),
@@ -93,17 +92,20 @@ export function CreateChannelDialog({
 
   const { data: searchedUsers, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
 
-  const currentUserProfile = useMemo(() => {
-    if(!user || !searchedUsers) return null;
-    return searchedUsers.find(u => u.id === user.uid);
-  }, [user, searchedUsers]);
+  const currentUserDocRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+  const { data: currentUserProfile } = useDoc<User>(currentUserDocRef);
 
+  // Set the current user as the initial selected member
   useEffect(() => {
-    if (user && currentUserProfile && !selectedUsers.some(u => u.id === user.uid)) {
+    if (currentUserProfile && !selectedUsers.some(u => u.id === currentUserProfile.id)) {
         setSelectedUsers([currentUserProfile]);
     }
-   }, [user, currentUserProfile, selectedUsers]);
+   }, [currentUserProfile, selectedUsers]);
 
+   // Reset state when the dialog is opened
    useEffect(() => {
     if (isOpen) {
         form.reset({ name: '', members: user ? [user.uid] : []});
@@ -114,6 +116,7 @@ export function CreateChannelDialog({
     }
    }, [isOpen, user, form, currentUserProfile]);
 
+   // Sync selected users with the form state
    useEffect(() => {
     const memberIds = selectedUsers.map(u => u.id);
     form.setValue('members', memberIds, { shouldValidate: true });
@@ -122,6 +125,7 @@ export function CreateChannelDialog({
   const channelName = form.watch('name');
   const memberIds = form.watch('members');
 
+  // Fetch AI suggestions when channel name or members change
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (!channelName || channelName.length < 3 || memberIds.length <= 2) {
@@ -148,7 +152,7 @@ export function CreateChannelDialog({
 
     const timeoutId = setTimeout(fetchSuggestions, 500);
     return () => clearTimeout(timeoutId);
-  }, [channelName, memberIds, selectedUsers]);
+  }, [channelName, memberIds.length, selectedUsers]); // Depend on memberIds.length to re-trigger
 
   const toggleMember = (member: User) => {
     if (member.id === user?.uid) return; 

@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -45,15 +46,27 @@ service cloud.firestore {
     // COLLECTION: users
     //
     // --------------------------------------------------------------------------
+
+    // This rule applies to the ENTIRE /users collection.
+    // It explicitly forbids `list` (querying the whole collection) and `write`
+    // (creating/updating documents without a specific document match).
+    // This is a critical security measure to prevent data scraping.
+    match /users {
+      allow list, write: if false;
+    }
+
+    // This rule applies to INDIVIDUAL documents within the /users collection.
     match /users/{userId} {
       /**
-       * @allow (get, list) Any authenticated user can read another user's profile to see their name, avatar, etc.,
-       * and list their subcollections (if any). The `list` permission on the document is different
-       * from listing the collection itself. Client-side queries are still required to list users.
+       * @allow (get) Any authenticated user can read another user's profile.
+       * This is necessary for search, DMs, and viewing profiles.
+       * We will make client-side queries targeted and efficient to avoid needing a broad 'list' permission.
+       *
        * @allow (create, update) A user can only create or update THEIR OWN profile.
+       *
        * @allow (delete) Deleting user profiles is disallowed for safety.
        */
-      allow get, list: if isSignedIn();
+      allow get: if isSignedIn();
       allow create, update: if isOwner(userId);
       allow delete: if false; // Safety: prevent users from deleting their accounts through the client.
     }
