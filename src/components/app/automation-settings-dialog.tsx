@@ -47,7 +47,7 @@ export function AutomationSettingsDialog({
     // Fetch documents for users who are members of the channel
     // Firestore 'in' queries are limited to 30 items. 
     // If a channel can have more members, this would need pagination or a different approach.
-    return query(collection(firestore, 'users'), where('id', 'in', channel.members));
+    return query(collection(firestore, 'users'), where('id', 'in', channel.members.slice(0, 30)));
   }, [firestore, channel]);
 
   const { data: channelUsers } = useCollection<User>(channelUsersQuery);
