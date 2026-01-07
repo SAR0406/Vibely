@@ -69,6 +69,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  username: z.string().min(3, { message: "Username must be at least 3 characters."}),
   email: z.string().email({ message: 'Please enter a valid email.' }),
   password: z
     .string()
@@ -93,7 +94,7 @@ export default function SignupPage() {
 
   const signupForm = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { name: '', email: '', password: '' },
+    defaultValues: { name: '', username: '', email: '', password: '' },
   });
 
   const googleForm = useForm<z.infer<typeof googleSchema>>({
@@ -176,7 +177,7 @@ export default function SignupPage() {
         newUser.uid,
         values.email,
         values.name,
-        values.email.split('@')[0] // simple username generation
+        values.username
       );
       // The onAuthStateChanged listener will handle redirecting to /chat
     } catch (error) {
@@ -364,6 +365,19 @@ export default function SignupPage() {
                         </FormItem>
                         )}
                     />
+                     <FormField
+                        control={signupForm.control}
+                        name="username"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                            <Input placeholder="e.g. janedoe" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
                     <FormField
                         control={signupForm.control}
                         name="email"
@@ -386,7 +400,7 @@ export default function SignupPage() {
                         name="password"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Password</Label>
+                            <FormLabel>Password</FormLabel>
                             <FormControl>
                             <Input type="password" {...field} />
                             </FormControl>
