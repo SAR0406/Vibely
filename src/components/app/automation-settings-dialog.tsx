@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -41,13 +41,12 @@ export function AutomationSettingsDialog({
   const firestore = useFirestore();
   
   const channelUsersQuery = useMemoFirebase(() => {
-    // Only run query if we have a channel with members
-    if (!firestore || !channel || channel.members.length === 0) return null;
+    if (!firestore || !channel || !channel.members || channel.members.length === 0) return null;
     
-    // Fetch documents for users who are members of the channel
     // Firestore 'in' queries are limited to 30 items. 
     // If a channel can have more members, this would need pagination or a different approach.
-    return query(collection(firestore, 'users'), where('id', 'in', channel.members.slice(0, 30)));
+    const memberIds = channel.members.length > 30 ? channel.members.slice(0, 30) : channel.members;
+    return query(collection(firestore, 'users'), where('id', 'in', memberIds));
   }, [firestore, channel]);
 
   const { data: channelUsers } = useCollection<User>(channelUsersQuery);

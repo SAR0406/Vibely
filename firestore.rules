@@ -49,14 +49,18 @@ service cloud.firestore {
 
     match /users/{userId} {
       /**
-       * @allow (read, list) Anyone can read user profiles and list users.
+       * @allow (get) Any authenticated user can read another user's profile to see their name, avatar, etc.
        * @allow (create, update) A user can only create or update THEIR OWN profile.
        * @allow (delete) Deleting user profiles is disallowed for safety.
+       * @allow (list) This is explicitly disallowed to prevent scraping all users. 
+       *              Users must be found via a targeted query (e.g., by userCode).
        */
-      allow read, list: if true;
+      allow get: if isSignedIn();
       allow create, update: if isOwner(userId);
       allow delete: if false; 
+      allow list: if false; // IMPORTANT: Prevents listing all users.
     }
+
 
     // --------------------------------------------------------------------------
     //
@@ -66,25 +70,25 @@ service cloud.firestore {
 
     match /channels/{channelId} {
       /**
-       * @allow (read, list) Anyone can read and list channels.
-       * @allow (update) Full update access is granted only to members of the channel.
+       * @allow (get, update) Full read/update access is granted only to members of the channel.
+       * @allow (list) Users can only list channels they are members of. This requires a `where('members', 'array-contains', request.auth.uid)` clause on the client-side query.
        * @allow (create) Any signed-in user can create a new channel, provided they include themselves as a member and the owner.
        * @allow (delete) Only the channel's designated owner can delete it.
        */
-      allow read, list: if true;
-      allow update: if isChannelMember(channelId);
+      allow get, update: if isChannelMember(channelId);
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid in request.resource.data.members && request.resource.data.ownerId == request.auth.uid;
       allow delete: if isChannelOwner(channelId);
 
       // SUB-COLLECTION: messages
       match /messages/{messageId} {
         /**
-         * @allow (read, list) Anyone can read messages in any channel.
+         * @allow (read, list) Users can only read messages if they are a member of the parent channel.
          * @allow (create) A user can only create a message if they are a channel member, and they must be the author.
          * @allow (update) Users can only update their own messages.
          * @allow (delete) Users can delete their own messages. Channel owners can also delete any message in their channel.
          */
-        allow read, list: if true;
+        allow read, list: if isChannelMember(channelId);
         allow create: if isChannelMember(channelId) && request.resource.data.authorId == request.auth.uid;
         allow update: if isChannelMember(channelId) && resource.data.authorId == request.auth.uid;
         allow delete: if isChannelMember(channelId) && (resource.data.authorId == request.auth.uid || isChannelOwner(channelId));

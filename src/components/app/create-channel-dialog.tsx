@@ -79,11 +79,11 @@ export function CreateChannelDialog({
   });
 
   const usersQuery = useMemoFirebase(() => {
-    // IMPORTANT: Only run the query if there is a search term.
     if (!firestore || !debouncedSearchTerm) return null;
     return query(
       collection(firestore, 'users'),
-      where('userCode', '==', debouncedSearchTerm)
+      where('userCode', '>=', debouncedSearchTerm),
+      where('userCode', '<=', debouncedSearchTerm + '\uf8ff')
     );
   }, [firestore, debouncedSearchTerm]);
 
