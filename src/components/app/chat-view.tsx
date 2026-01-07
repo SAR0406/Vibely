@@ -116,6 +116,41 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
 
   const { data: chatUsers } = useCollection<User>(chatUsersQuery);
 
+  const isDM = chat?.members.length === 2 && chat.isDM;
+  const otherUserIdInDM = isDM ? chat.members.find(id => id !== currentUser?.id) : null;
+
+  const headerContent = useMemo(() => {
+    if (!chat) return null;
+
+    if (isDM && otherUserIdInDM) {
+        return <DMHeaderContent otherUserId={otherUserIdInDM} />
+    }
+    
+    if (!isDM && chatUsers) {
+        return (
+            <>
+                <GroupAvatar userIds={chat.members} allUsers={chatUsers} />
+                <div>
+                    <h2 className="font-headline text-lg font-semibold">{chat.name}</h2>
+                    <p className="text-sm text-muted-foreground">
+                    {chat.description}
+                    </p>
+                </div>
+            </>
+        )
+    }
+
+    return (
+        <div className='flex items-center gap-3'>
+            <Skeleton className='size-9 rounded-full'/>
+            <div className='space-y-1'>
+                <Skeleton className='h-4 w-32' />
+                <Skeleton className='h-3 w-48' />
+            </div>
+        </div>
+    );
+  }, [isDM, otherUserIdInDM, chat, chatUsers, currentUser]);
+
   const markMessagesAsRead = async () => {
     if (!chat || !currentUser || messagesLoading || !messages || !firestore) return;
 
@@ -194,39 +229,6 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
       </AnimatePresence>
     );
   }
-
-  const isDM = chat.members.length === 2 && chat.isDM;
-  const otherUserIdInDM = isDM ? chat.members.find(id => id !== currentUser?.id) : null;
-
-  const headerContent = useMemo(() => {
-    if (isDM && otherUserIdInDM) {
-        return <DMHeaderContent otherUserId={otherUserIdInDM} />
-    }
-    
-    if (!isDM && chatUsers) {
-        return (
-            <>
-                <GroupAvatar userIds={chat.members} allUsers={chatUsers} />
-                <div>
-                    <h2 className="font-headline text-lg font-semibold">{chat.name}</h2>
-                    <p className="text-sm text-muted-foreground">
-                    {chat.description}
-                    </p>
-                </div>
-            </>
-        )
-    }
-
-    return (
-        <div className='flex items-center gap-3'>
-            <Skeleton className='size-9 rounded-full'/>
-            <div className='space-y-1'>
-                <Skeleton className='h-4 w-32' />
-                <Skeleton className='h-3 w-48' />
-            </div>
-        </div>
-    );
-  }, [isDM, otherUserIdInDM, chat, chatUsers, currentUser]);
 
   return (
     <motion.div
