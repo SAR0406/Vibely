@@ -11,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarInset,
 } from '@/components/ui/sidebar';
 import { MessageSquare, PlusCircle, Users, LogOut, Search, Bell } from 'lucide-react';
 import Link from 'next/link';
