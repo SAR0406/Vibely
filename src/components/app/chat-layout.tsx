@@ -13,13 +13,14 @@ import {
   SidebarMenuButton,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { MessageSquare, PlusCircle, Users, LogOut } from 'lucide-react';
+import { MessageSquare, PlusCircle, Users, LogOut, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { Channel, User as UserType } from '@/lib/types';
 import { ChatView } from './chat-view';
 import { UserAvatar } from './user-avatar';
 import { CreateChannelDialog } from './create-channel-dialog';
+import { SidebarSearchDialog } from './sidebar-search-dialog';
 import { Button } from '../ui/button';
 import { ThemeSwitcher } from './theme-switcher';
 import {
@@ -65,6 +66,7 @@ function useChannels() {
 
 export default function ChatLayout() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -115,6 +117,39 @@ export default function ChatLayout() {
 
     handleSelectChannel(channelId);
   };
+  
+  const handleStartDirectMessage = (otherUser: UserType) => {
+    if (!currentUser) return;
+  
+    // Check if a DM channel already exists
+    const existingChannel = channels?.find(c => 
+      c.type === 'private' &&
+      c.members.length === 2 &&
+      c.members.includes(currentUser.id) &&
+      c.members.includes(otherUser.id)
+    );
+  
+    if (existingChannel) {
+      handleSelectChannel(existingChannel.id);
+    } else {
+      // Create a new DM channel
+      const channelId = `dm-${[currentUser.id, otherUser.id].sort().join('-')}`;
+      const channelRef = doc(firestore, 'channels', channelId);
+      const newChannel: Channel = {
+        id: channelId,
+        name: otherUser.fullName || otherUser.username || 'Direct Message',
+        description: `Direct message with ${otherUser.fullName}`,
+        members: [currentUser.id, otherUser.id],
+        type: 'private',
+        ownerId: currentUser.id, // Or handle ownership differently for DMs
+        automations: [],
+      };
+  
+      setDocumentNonBlocking(channelRef, newChannel, { merge: false });
+      handleSelectChannel(channelId);
+    }
+    setIsSearchOpen(false);
+  };
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -141,6 +176,26 @@ export default function ChatLayout() {
             </SidebarHeader>
             <SidebarContent className="p-2">
               <div className="flex flex-col gap-4">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-2 group-data-[collapsible=icon]:justify-center"
+                        onClick={() => setIsSearchOpen(true)}
+                        >
+                        <Search className="size-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">
+                            Search
+                        </span>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                        side="right"
+                        className="group-data-[collapsible=icon]:block hidden"
+                    >
+                        Search users
+                    </TooltipContent>
+                </Tooltip>
                 <div>
                   <p className="px-2 text-xs font-semibold uppercase text-muted-foreground group-data-[collapsible=icon]:hidden">
                     Channels
@@ -260,6 +315,14 @@ export default function ChatLayout() {
           onOpenChange={setIsCreateOpen}
           onCreateChannel={handleCreateChannel}
         />
+        {currentUser && (
+            <SidebarSearchDialog
+                isOpen={isSearchOpen}
+                onOpenChange={setIsSearchOpen}
+                currentUser={currentUser}
+                onSelectUser={handleStartDirectMessage}
+            />
+        )}
       </SidebarProvider>
     </TooltipProvider>
   );
