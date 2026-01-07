@@ -63,6 +63,7 @@
     --foreground: 230 20% 7%;
     --primary: 340 85% 60%;
     --primary-foreground: 0 0% 98%;
+    --accent: 240 4.8% 95.9%;
   }
   .dusk.dark {
     --background: 230 20% 7%;
@@ -92,6 +93,7 @@
     --foreground: 35 15% 10%;
     --primary: 25 85% 55%;
     --primary-foreground: 35 20% 10%;
+    --accent: 240 4.8% 95.9%;
   }
   .latte.dark {
     --background: 35 15% 10%;
@@ -121,6 +123,7 @@
     --foreground: 160 15% 8%;
     --primary: 150 70% 45%;
     --primary-foreground: 0 0% 98%;
+    --accent: 240 4.8% 95.9%;
   }
   .mint.dark {
     --background: 160 15% 8%;
@@ -150,6 +153,7 @@
     --foreground: 270 25% 8%;
     --primary: 340 90% 65%;
     --primary-foreground: 340 20% 10%;
+    --accent: 240 4.8% 95.9%;
   }
   .sunset.dark {
     --background: 270 25% 8%;
@@ -179,6 +183,7 @@
     --foreground: 215 40% 10%;
     --primary: 190 80% 60%;
     --primary-foreground: 215 30% 10%;
+    --accent: 240 4.8% 95.9%;
   }
   .ocean.dark {
     --background: 215 40% 10%;
@@ -249,25 +254,11 @@
 
   /* Forest Theme */
   .forest {
-    --background: 120 10% 96%;
+    --background: 0 0% 100%;
     --foreground: 120 25% 8%;
-    --card: 120 10% 100%;
-    --card-foreground: 120 25% 8%;
-    --popover: 120 10% 100%;
-    --popover-foreground: 120 25% 8%;
     --primary: 100 65% 45%;
     --primary-foreground: 100 20% 98%;
-    --secondary: 110 15% 94%;
-    --secondary-foreground: 110 15% 20%;
-    --muted: 110 15% 94%;
-    --muted-foreground: 110 15% 45%;
-    --accent: 110 15% 90%;
-    --accent-foreground: 110 15% 15%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 110 15% 90%;
-    --input: 110 15% 90%;
-    --ring: 100 65% 45%;
+    --accent: 240 4.8% 95.9%;
   }
   .forest.dark {
     --background: 120 25% 8%;
@@ -294,25 +285,11 @@
 
   /* Rose Theme */
   .rose {
-    --background: 350 20% 96%;
+    --background: 0 0% 100%;
     --foreground: 350 30% 10%;
-    --card: 350 20% 100%;
-    --card-foreground: 350 30% 10%;
-    --popover: 350 20% 100%;
-    --popover-foreground: 350 30% 10%;
     --primary: 340 80% 60%;
     --primary-foreground: 340 20% 98%;
-    --secondary: 345 30% 94%;
-    --secondary-foreground: 345 30% 20%;
-    --muted: 345 30% 94%;
-    --muted-foreground: 345 20% 45%;
-    --accent: 345 30% 90%;
-    --accent-foreground: 345 30% 15%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 345 30% 90%;
-    --input: 345 30% 90%;
-    --ring: 340 80% 60%;
+    --accent: 240 4.8% 95.9%;
   }
   .rose.dark {
     --background: 350 30% 10%;
@@ -337,6 +314,13 @@
   }
 
   /* Custom Theme (initially a copy of Vibely) */
+  .custom {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 0 0% 98%;
+    --accent: 240 4.8% 95.9%;
+  }
   .custom.dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
