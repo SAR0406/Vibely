@@ -10,11 +10,11 @@
   /* Default Vibely Theme */
   .vibely {
     --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --popover-foreground: 0 0% 3.9%;
     --primary: 262.1 83.3% 57.8%;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
@@ -64,12 +64,12 @@
 
   /* Dusk Theme */
   .dusk {
-    --background: 230 20% 98%;
-    --foreground: 0 0% 0%;
-    --card: 230 20% 100%;
-    --card-foreground: 0 0% 0%;
-    --popover: 230 20% 100%;
-    --popover-foreground: 0 0% 0%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
     --primary: 340 85% 60%;
     --primary-foreground: 0 0% 98%;
     --secondary: 230 20% 94%;
@@ -109,12 +109,12 @@
 
   /* Latte Theme */
   .latte {
-    --background: 35 40% 96%;
-    --foreground: 0 0% 0%;
-    --card: 35 40% 98%;
-    --card-foreground: 0 0% 0%;
-    --popover: 35 40% 98%;
-    --popover-foreground: 0 0% 0%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
     --primary: 25 85% 55%;
     --primary-foreground: 35 20% 98%;
     --secondary: 35 40% 92%;
@@ -154,12 +154,12 @@
 
   /* Mint Theme */
   .mint {
-    --background: 160 30% 98%;
-    --foreground: 0 0% 0%;
-    --card: 160 30% 100%;
-    --card-foreground: 0 0% 0%;
-    --popover: 160 30% 100%;
-    --popover-foreground: 0 0% 0%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
     --primary: 150 70% 40%;
     --primary-foreground: 0 0% 98%;
     --secondary: 160 30% 94%;
@@ -199,12 +199,12 @@
 
   /* Sunset Theme */
   .sunset {
-    --background: 20 50% 97%;
-    --foreground: 0 0% 0%;
-    --card: 20 50% 100%;
-    --card-foreground: 0 0% 0%;
-    --popover: 20 50% 100%;
-    --popover-foreground: 0 0% 0%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
     --primary: 25 95% 53.1%;
     --primary-foreground: 20 50% 98%;
     --secondary: 20 50% 93%;
@@ -244,12 +244,12 @@
 
   /* Ocean Theme */
   .ocean {
-    --background: 205 60% 98%;
-    --foreground: 0 0% 0%;
-    --card: 205 60% 100%;
-    --card-foreground: 0 0% 0%;
-    --popover: 205 60% 100%;
-    --popover-foreground: 0 0% 0%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
     --primary: 210 85% 55%;
     --primary-foreground: 0 0% 98%;
     --secondary: 205 60% 94%;
@@ -290,11 +290,11 @@
   /* Custom Theme (initially a copy of Vibely) */
   .custom {
     --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --popover-foreground: 0 0% 3.9%;
     --primary: 262.1 83.3% 57.8%;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
@@ -350,7 +350,8 @@
 }
 
 @layer components {
-  :root:not(.dark) .bg-primary {
+  :root:not(.dark) .bg-primary,
+  :root:not(.dark) .bg-primary-gradient {
     background: linear-gradient(to right, hsl(var(--primary)), hsl(330, 80%, 55%));
     color: hsl(var(--primary-foreground));
   }
