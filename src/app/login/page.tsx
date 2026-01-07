@@ -25,11 +25,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useUser } from '@/firebase';
-import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { FirebaseError } from 'firebase/app';
-import { signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, GithubAuthProvider, UserCredential } from 'firebase/auth';
 import { Separator } from '@/components/ui/separator';
+import { doc, getDoc } from 'firebase/firestore';
+import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import type { User as UserType } from '@/lib/types';
+
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
@@ -68,6 +71,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -84,11 +88,52 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
+  const handleSuccessfulLogin = async (userCredential: UserCredential) => {
+    const loggedInUser = userCredential.user;
+    if (!firestore || !loggedInUser) return;
+  
+    // Check if the user exists in the userDirectory (for back-filling old users)
+    const userDirRef = doc(firestore, 'userDirectory', loggedInUser.uid);
+    const userDirSnap = await getDoc(userDirRef);
+  
+    if (!userDirSnap.exists()) {
+      // User is likely an old user, let's create their directory entry.
+      const userProfileRef = doc(firestore, 'users', loggedInUser.uid);
+      const userProfileSnap = await getDoc(userProfileRef);
+  
+      if (userProfileSnap.exists()) {
+        const userProfile = userProfileSnap.data() as UserType;
+        const userCode = userProfile.userCode || `${userProfile.username}#${Math.floor(1000 + Math.random() * 9000)}`;
+        
+        const searchableTerms = [
+          ...new Set([
+              userProfile.username?.toLowerCase(),
+              userProfile.fullName?.toLowerCase(),
+              ...(userProfile.fullName?.toLowerCase().split(' ') || [])
+          ])
+        ].filter(Boolean) as string[];
+
+        setDocumentNonBlocking(userDirRef, {
+            id: loggedInUser.uid,
+            userCode,
+            fullName: userProfile.fullName,
+            avatarUrl: userProfile.avatarUrl,
+            searchableTerms,
+        }, { merge: false });
+
+        if (!userProfile.userCode) {
+            updateDocumentNonBlocking(userProfileRef, { userCode });
+        }
+      }
+    }
+    // The onAuthStateChanged listener in FirebaseProvider will handle the redirect
+  };
+
   const handleEmailLogin = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
-      initiateEmailSignIn(auth, values.email, values.password);
-      // The onAuthStateChanged listener in FirebaseProvider will handle the redirect
+      const userCredential = await auth.signInWithEmailAndPassword(values.email, values.password);
+      await handleSuccessfulLogin(userCredential);
     } catch (error) {
       handleAuthError(error);
       setIsLoading(false);
@@ -103,8 +148,8 @@ export default function LoginPage() {
         : new GithubAuthProvider();
 
     try {
-      await signInWithPopup(auth, provider);
-      // Auth state listener will handle the redirect to /chat
+      const userCredential = await signInWithPopup(auth, provider);
+      await handleSuccessfulLogin(userCredential);
     } catch (error) {
       handleAuthError(error);
     } finally {

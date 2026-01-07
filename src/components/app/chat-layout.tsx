@@ -144,7 +144,7 @@ export default function ChatLayout() {
     return doc(firestore, 'users', user.uid);
   }, [user, firestore]);
   
-  const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
+  const { data: currentUserProfile } = useDoc<UserType>(userDocRef);
 
   const chatRequestsQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -178,41 +178,6 @@ export default function ChatLayout() {
     }
   }, [user, firestore]);
   
-  useEffect(() => {
-    if (isProfileLoading || !currentUserProfile || !firestore || !user) return;
-    
-    const checkUserDirectory = async () => {
-        const userDirRef = doc(firestore, 'userDirectory', user.uid);
-        const docSnap = await getDoc(userDirRef);
-        
-        if (!docSnap.exists()) {
-            const userCode = currentUserProfile.userCode || `${currentUserProfile.username}#${Math.floor(1000 + Math.random() * 9000)}`;
-            const searchableTerms = [
-                ...new Set([
-                    currentUserProfile.username?.toLowerCase(),
-                    currentUserProfile.fullName?.toLowerCase(),
-                    ...(currentUserProfile.fullName?.toLowerCase().split(' ') || [])
-                ])
-            ].filter(Boolean) as string[];
-
-            setDocumentNonBlocking(userDirRef, {
-                id: user.uid,
-                userCode,
-                fullName: currentUserProfile.fullName,
-                avatarUrl: currentUserProfile.avatarUrl,
-                searchableTerms: searchableTerms,
-            }, { merge: false });
-
-            if (!currentUserProfile.userCode) {
-                 const userRef = doc(firestore, 'users', user.uid);
-                 updateDocumentNonBlocking(userRef, { userCode });
-            }
-        }
-    };
-    
-    checkUserDirectory();
-
-  }, [currentUserProfile, isProfileLoading, firestore, user]);
 
   const currentUser = useMemo(() => {
     if (!user || !currentUserProfile) return null;
