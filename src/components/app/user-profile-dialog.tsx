@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { UserAvatar } from './user-avatar';
 import { User, ChatRequest } from '@/lib/types';
 import { MessageSquarePlus } from 'lucide-react';
-import { useFirestore, useUser, useDoc } from '@/firebase';
+import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -33,7 +33,10 @@ export function UserProfileDialog({
     const firestore = useFirestore();
     const { toast } = useToast();
 
-    const currentUserDocRef = doc(firestore, 'users', authUser?.uid || '---');
+    const currentUserDocRef = useMemoFirebase(() => {
+      if (!firestore || !authUser) return null;
+      return doc(firestore, 'users', authUser.uid);
+    }, [firestore, authUser]);
     const { data: currentUserProfile } = useDoc<User>(currentUserDocRef);
 
 
