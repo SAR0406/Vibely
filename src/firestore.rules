@@ -49,24 +49,18 @@ service cloud.firestore {
 
     match /users/{userId} {
       /**
-       * @allow (get) Any authenticated user can read another user's profile to see their name, avatar, etc.
+       * @allow (get) Any authenticated user can read another user's profile. This is necessary for DMs and search.
        * @allow (create, update) A user can only create or update THEIR OWN profile.
        * @allow (delete) Deleting user profiles is disallowed for safety.
+       * @allow (list) This is explicitly disallowed to prevent scraping all users. 
+       *              Users must be found via a targeted query (e.g., by userCode).
        */
       allow get: if isSignedIn();
       allow create, update: if isOwner(userId);
       allow delete: if false; 
+      allow list: if false; // IMPORTANT: Prevents listing all users.
     }
     
-    match /users {
-        /**
-         * @allow (list) This allows client-side queries for users, which is needed for search.
-         *              It is safe because the client-side queries should be specific and targeted
-         *              (e.g., searching by userCode), preventing mass-data scraping.
-         */
-        allow list: if isSignedIn();
-    }
-
 
     // --------------------------------------------------------------------------
     //
