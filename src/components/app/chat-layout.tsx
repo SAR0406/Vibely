@@ -191,7 +191,7 @@ export default function ChatLayout() {
                     </TooltipTrigger>
                     <TooltipContent
                         side="right"
-                        className="group-data-[collapsible=icon]:block hidden"
+                        className="hidden group-data-[collapsible=icon]:block"
                     >
                         Search users
                     </TooltipContent>
@@ -252,15 +252,15 @@ export default function ChatLayout() {
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
-                  className="group-data-[collapsible=icon]:block hidden"
+                  className="hidden group-data-[collapsible=icon]:block"
                 >
                   Create Channel
                 </TooltipContent>
               </Tooltip>
 
-              <div className="flex flex-col gap-2 items-center group-data-[collapsible=expanded]:items-stretch">
+              <div className="flex flex-col items-center gap-2 group-data-[collapsible=expanded]:items-stretch">
                 <ThemeSwitcher />
-                <div className="flex items-center gap-3 rounded-lg p-2 transition-colors duration-200 hover:bg-muted group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:justify-center">
+                <div className="flex items-center gap-3 rounded-lg p-2 transition-colors duration-200 hover:bg-muted group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
                   {currentUser && (
                     <>
                       <UserAvatar
@@ -287,7 +287,7 @@ export default function ChatLayout() {
                         </TooltipTrigger>
                         <TooltipContent
                           side="right"
-                          className="group-data-[collapsible=icon]:block hidden"
+                          className="hidden group-data-[collapsible=icon]:block"
                         >
                           Logout
                         </TooltipContent>
