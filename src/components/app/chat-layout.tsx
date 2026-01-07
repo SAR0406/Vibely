@@ -12,14 +12,13 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { MessageSquare, PlusCircle, Users, LogOut, Search, Bell } from 'lucide-react';
+import { MessageSquare, Users, LogOut, Search, Bell, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { Chat, User as UserType, Message, ChatRequest } from '@/lib/types';
 import { ChatView } from './chat-view';
 import { UserAvatar } from './user-avatar';
-import { CreateChatDialog } from './create-chat-dialog';
-import { SidebarSearchDialog } from './sidebar-search-dialog';
+import { FindPeopleDialog } from './find-people-dialog';
 import { UserProfileDialog } from './user-profile-dialog';
 import { ChatRequestsDialog } from './chat-requests-dialog';
 import { Button } from '../ui/button';
@@ -123,8 +122,7 @@ const DMMenuItem = ({ chat, isActive, onSelect }: { chat: Chat, isActive: boolea
 
 
 export default function ChatLayout() {
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isFindPeopleOpen, setIsFindPeopleOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isRequestsOpen, setIsRequestsOpen] = useState(false);
   const [selectedUserForProfile, setSelectedUserForProfile] = useState<UserType | null>(null);
@@ -229,7 +227,13 @@ export default function ChatLayout() {
 
   const handleCreateChat = (newChatData: Omit<Chat, 'id'>) => {
     if (!firestore) return;
-    const chatId = `chat-${Date.now()}`;
+
+    const isDM = newChatData.isDM;
+    // For DMs, create a consistent ID
+    const chatId = isDM 
+      ? `dm-${newChatData.members.sort().join('-')}`
+      : `chat-${Date.now()}`;
+      
     const chatRef = doc(firestore, 'chats', chatId);
     const chatWithId = { ...newChatData, id: chatId };
 
@@ -241,7 +245,7 @@ export default function ChatLayout() {
   const handleShowUserProfile = (userToShow: UserType) => {
     setSelectedUserForProfile(userToShow);
     setIsProfileOpen(true);
-    setIsSearchOpen(false); // Close search dialog when profile opens
+    setIsFindPeopleOpen(false); // Close search dialog when profile opens
   };
   
   const handleStartDirectMessage = (otherUser: UserType) => {
@@ -277,6 +281,7 @@ export default function ChatLayout() {
     }
     setIsProfileOpen(false);
     setIsRequestsOpen(false);
+    setIsFindPeopleOpen(false);
   };
 
   const handleLogout = async () => {
@@ -296,7 +301,6 @@ export default function ChatLayout() {
   const publicChats = useMemo(() => chats?.filter((c) => c.isPublic && !c.isDM) || [], [chats]);
   const groupDMs = useMemo(() => chats?.filter(c => c.isDM && c.members.length > 2) || [], [chats]);
   const directMessages = useMemo(() => chats?.filter(c => c.isDM && c.members.length === 2) || [], [chats]);
-
 
   return (
     <div className="flex h-screen w-full flex-col">
@@ -321,10 +325,10 @@ export default function ChatLayout() {
                         <Button
                           variant="ghost"
                           className="w-full justify-start gap-2"
-                          onClick={() => setIsSearchOpen(true)}
+                          onClick={() => setIsFindPeopleOpen(true)}
                         >
                           <Search className="size-4" />
-                          <span>Search</span>
+                          <span>Find People</span>
                         </Button>
                       </TooltipTrigger>
                     </Tooltip>
@@ -406,10 +410,10 @@ export default function ChatLayout() {
                       <Button
                         variant="ghost"
                         className="w-full justify-center gap-2"
-                        onClick={() => setIsCreateOpen(true)}
+                        onClick={() => setIsFindPeopleOpen(true)}
                       >
-                        <PlusCircle className="size-4" />
-                        <span>Create Chat</span>
+                        <UserPlus className="size-4" />
+                        <span>New Chat</span>
                       </Button>
                     </TooltipTrigger>
                   </Tooltip>
@@ -484,31 +488,28 @@ export default function ChatLayout() {
                   </div>
                 </SidebarFooter>
               </Sidebar>
-
-              <div className="flex flex-1 flex-col">
-                <header className="absolute left-4 top-4 z-20">
-                  <SidebarTrigger />
-                </header>
-                <ChatView
-                  key={selectedChatId}
-                  currentUser={currentUser}
-                  chat={selectedChat || null}
-                />
-              </div>
+                <div className="flex-1 flex flex-col">
+                    <header className="absolute left-4 top-4 z-20">
+                      <SidebarTrigger />
+                    </header>
+                    <ChatView
+                    key={selectedChatId}
+                    currentUser={currentUser}
+                    chat={selectedChat || null}
+                    />
+                </div>
             </div>
-            <CreateChatDialog
-              isOpen={isCreateOpen}
-              onOpenChange={setIsCreateOpen}
+            {currentUser && (
+            <FindPeopleDialog
+              isOpen={isFindPeopleOpen}
+              onOpenChange={setIsFindPeopleOpen}
               onCreateChat={handleCreateChat}
+              onSelectUser={handleShowUserProfile}
+              currentUser={currentUser}
             />
+            )}
             {currentUser && (
               <>
-                <SidebarSearchDialog
-                  isOpen={isSearchOpen}
-                  onOpenChange={setIsSearchOpen}
-                  currentUser={currentUser}
-                  onSelectUser={handleShowUserProfile}
-                />
                 <ChatRequestsDialog
                   isOpen={isRequestsOpen}
                   onOpenChange={setIsRequestsOpen}
