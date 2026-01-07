@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { MessageSquare, Users, LogOut, Search, Bell, UserPlus, Edit } from 'lucide-react';
+import { MessageSquare, Users, LogOut, UserPlus, Bot, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { Chat, User as UserType, Message, ChatRequest, Automation } from '@/lib/types';
@@ -25,8 +25,8 @@ import { Button } from '../ui/button';
 import { ThemeSwitcher } from './theme-switcher';
 import {
   Tooltip,
-  TooltipContent,
   TooltipProvider,
+  TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAuth, useUser, useDoc, useFirestore, useCollection, useMemoFirebase, useFirebaseApp } from '@/firebase';
@@ -423,8 +423,12 @@ export default function ChatLayout() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent side="top" align="start" className="w-56">
+                                <DropdownMenuItem onClick={() => router.push('/companion')}>
+                                    <Bot className="mr-2 size-4" />
+                                    <span>My Companions</span>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setIsRequestsOpen(true)}>
-                                    <Bell className="mr-2 size-4" />
+                                    <Users className="mr-2 size-4" />
                                     <span>Chat Requests</span>
                                      {chatRequests && chatRequests.length > 0 && (
                                         <Badge
@@ -473,7 +477,7 @@ export default function ChatLayout() {
             <FindPeopleDialog
               isOpen={isFindPeopleOpen}
               onOpenChange={setIsFindPeopleOpen}
-              onSelectUser={handleShowUserProfile}
+              onSelectUser={handleStartDirectMessage}
               onCreateChat={handleCreateChat}
               currentUser={currentUser}
             />

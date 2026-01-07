@@ -166,9 +166,9 @@ export function UserProfileDialog({
                     Edit Profile
                 </Button>
             ) : (
-                <Button onClick={handleSendChatRequest} className="w-full">
+                 <Button onClick={() => onStartChat(user)} className="w-full">
                     <MessageSquarePlus className="mr-2 size-4" />
-                    Send Chat Request
+                    Send Direct Message
                 </Button>
             )}
         </DialogFooter>

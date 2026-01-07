@@ -14,6 +14,17 @@ export type User = {
   searchableTerms?: string[];
 };
 
+export type Companion = {
+    id: string;
+    name: string;
+    avatarUrl: string;
+    persona: string;
+    voice: string;
+    tools: ('web_search')[];
+    ownerId: string;
+    createdAt: any;
+}
+
 export type Reaction = {
   emoji: string;
   userId: string;
@@ -39,6 +50,7 @@ export type Chat = {
   isDM: boolean;
   ownerId: string;
   automations: Automation[];
+  companionIds?: string[];
   createdAt?: string;
   updatedAt?: string;
 };
@@ -60,5 +72,3 @@ export type ChatRequest = {
     status: 'pending' | 'accepted' | 'declined';
     createdAt: any;
 }
-
-    

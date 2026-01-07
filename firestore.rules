@@ -101,12 +101,27 @@ service cloud.firestore {
     match /userDirectory/{userId} {
         /**
          * @allow (read, list) Any authenticated user can search the directory.
-         * @allow (create) A user can only create their own directory entry.
-         * @allow (update, delete) Not allowed to prevent tampering.
+         * @allow (create, update) A user can only create or update their own directory entry.
+         * @allow (delete) Not allowed to prevent tampering.
          */
         allow read, list: if isSignedIn();
-        allow create: if isOwner(userId);
-        allow update, delete: if false;
+        allow create, update: if isOwner(userId);
+        allow delete: if false;
+    }
+
+    // --------------------------------------------------------------------------
+    //
+    // COLLECTION: companions
+    //
+    // --------------------------------------------------------------------------
+    match /companions/{companionId} {
+        /**
+         * @allow (read, list) Companions are public templates, anyone can read them.
+         * @allow (create, update) Only the owner can create or update their companion.
+         * @allow (delete) Only the owner can delete their companion.
+         */
+        allow read, list: if isSignedIn();
+        allow create, update, delete: if isOwner(resource.data.ownerId);
     }
 
 
@@ -135,11 +150,13 @@ service cloud.firestore {
         /**
          * @allow (read, list) Users can only read messages if they are a member of the parent chat.
          * @allow (create) A user can only create a message if they are a chat member, and they must be the author.
+         *                AI companion messages can be created server-side, so we check for that.
          * @allow (update) Users can update their own messages OR add/remove a reaction.
          * @allow (delete) Users can delete their own messages. chat owners can also delete any message in their chat.
          */
         allow read, list: if isChatMember(chatId);
-        allow create: if isChatMember(chatId) && request.resource.data.authorId == request.auth.uid;
+        // Allow create if user is a chat member and author, OR if there's no auth (server-side AI message)
+        allow create: if (isChatMember(chatId) && request.resource.data.authorId == request.auth.uid) || request.auth == null;
         allow update: if isChatMember(chatId) && (
                         (resource.data.authorId == request.auth.uid && request.resource.data.keys().hasOnly(['content', 'updatedAt'])) ||
                         (request.resource.data.keys().hasOnly(['reactions', 'updatedAt']) && isValidReactionUpdate(resource.data.reactions, request.resource.data.reactions))
@@ -149,5 +166,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

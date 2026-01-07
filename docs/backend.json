@@ -135,6 +135,11 @@
             "items": { "type": "string" },
             "description": "An array of user UIDs who are members of this chat. Used for security rules."
         },
+        "companionIds": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "An array of AI Companion IDs who are members of this chat."
+        },
         "automations": {
             "type": "array",
             "items": { "type": "object" },
@@ -160,7 +165,7 @@
         "id": { "type": "string" },
         "authorId": {
           "type": "string",
-          "description": "The UID of the user who sent the message."
+          "description": "The UID of the user or companion who sent the message."
         },
         "content": {
           "type": "string",
@@ -191,6 +196,25 @@
         }
       },
       "required": ["id", "authorId", "content", "timestamp"]
+    },
+    "Companion": {
+      "title": "AI Companion",
+      "description": "Represents a configurable AI agent that can participate in chats.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "avatarUrl": { "type": "string", "format": "uri" },
+        "persona": { "type": "string" },
+        "voice": { "type": "string" },
+        "tools": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["web_search"] }
+        },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "persona", "voice", "ownerId", "createdAt"]
     }
   },
   "auth": {
@@ -216,8 +240,10 @@
     "/chats/{chatId}/messages/{messageId}": {
       "schema": { "$ref": "#/entities/Message" },
       "description": "Stores all messages for a given chat. Access permissions are inherited from the parent chat."
+    },
+    "/companions/{companionId}": {
+        "schema": { "$ref": "#/entities/Companion" },
+        "description": "Stores configuration for user-created AI companions."
     }
   }
 }
-
-    
