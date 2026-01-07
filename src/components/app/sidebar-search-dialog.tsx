@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -39,19 +39,14 @@ export function SidebarSearchDialog({
     if (!firestore || !debouncedSearchTerm) return null;
     
     const term = debouncedSearchTerm.toLowerCase();
-    // A simple query to search for users by name or username
-    // Note: Firestore does not support case-insensitive queries natively.
-    // For a robust solution, you'd typically store a lowercase version of the fields.
-    // This query is a basic example and might not be performant on large datasets
-    // without proper indexing.
+    // This query performs a prefix search on the username.
+    // Firestore can efficiently execute this query with a basic index.
     return query(
       collection(firestore, 'users'),
       and(
-        where('id', '!=', currentUser.id), // Exclude current user
-        or(
-            where('username', '>=', term),
-            where('username', '<=', term + '\uf8ff')
-        )
+        where('username', '>=', term),
+        where('username', '<=', term + '\uf8ff'),
+        where('id', '!=', currentUser.id) // Exclude current user from results
       ),
       limit(10)
     );
@@ -65,16 +60,6 @@ export function SidebarSearchDialog({
     }
   }, [isOpen]);
 
-  const filteredUsers = useMemo(() => {
-    if (!users || !debouncedSearchTerm) return [];
-    const term = debouncedSearchTerm.toLowerCase();
-    return users.filter(u => 
-        u.fullName?.toLowerCase().includes(term) || 
-        u.username?.toLowerCase().includes(term)
-    );
-  }, [users, debouncedSearchTerm]);
-
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-0">
@@ -86,7 +71,7 @@ export function SidebarSearchDialog({
         </DialogHeader>
         <div className="px-6">
           <Input
-            placeholder="Search by name or username..."
+            placeholder="Search by username..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full"
@@ -99,13 +84,13 @@ export function SidebarSearchDialog({
                 <Loader2 className="size-6 animate-spin text-muted-foreground" />
               </div>
             )}
-            {!isLoading && debouncedSearchTerm && filteredUsers.length === 0 && (
+            {!isLoading && debouncedSearchTerm && (!users || users.length === 0) && (
               <p className="py-8 text-center text-sm text-muted-foreground">
                 No users found.
               </p>
             )}
             <div className="space-y-2">
-              {filteredUsers.map((user) => (
+              {users && users.map((user) => (
                 <Button
                   key={user.id}
                   variant="ghost"

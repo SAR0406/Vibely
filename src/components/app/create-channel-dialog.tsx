@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Wand2, Loader2 } from 'lucide-react';
+import { Wand2, Loader2, XIcon } from 'lucide-react';
 import {
   getChannelAssistantSuggestions,
   ChannelAssistantOutput,
@@ -33,8 +33,10 @@ import {
 import { UserAvatar } from './user-avatar';
 import { Channel, User } from '@/lib/types';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where, or } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
+import { useDebounce } from '@/hooks/use-debounce';
+import { ScrollArea } from '../ui/scroll-area';
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -64,15 +66,10 @@ export function CreateChannelDialog({
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const allUsersQuery = useMemoFirebase(() => {
-    // Only construct the query if the dialog is open and firestore is available
-    if (!firestore || !isOpen) return null;
-    return query(collection(firestore, 'users'));
-  }, [firestore, isOpen]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const { data: allUsers, isLoading: isLoadingUsers } = useCollection<User>(allUsersQuery);
-
-  const otherUsers = useMemo(() => allUsers?.filter(u => u.id !== user?.uid) || [], [allUsers, user]);
+  const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -82,36 +79,58 @@ export function CreateChannelDialog({
     },
   });
 
-   useEffect(() => {
-    if (user && !form.getValues('members').includes(user.uid)) {
-      form.setValue('members', [user.uid]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore || !debouncedSearchTerm) return null;
+    const term = debouncedSearchTerm.toLowerCase();
+    return query(
+      collection(firestore, 'users'),
+      or(
+        where('username', '>=', term),
+        where('username', '<=', term + '\uf8ff')
+      )
+    );
+  }, [firestore, debouncedSearchTerm]);
+
+  const { data: searchedUsers, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
+
+  const currentUserProfile = useMemo(() => {
+    if(!user || !searchedUsers) return null;
+    return searchedUsers.find(u => u.id === user.uid);
+  }, [user, searchedUsers]);
+
+  useEffect(() => {
+    if (user && currentUserProfile && !selectedUsers.some(u => u.id === user.uid)) {
+        setSelectedUsers([currentUserProfile]);
     }
-  }, [user, form]);
+   }, [user, currentUserProfile, selectedUsers]);
 
    useEffect(() => {
     if (isOpen) {
         form.reset({ name: '', members: user ? [user.uid] : []});
         setSuggestions(null);
         setEnabledAutomations({});
+        setSelectedUsers(currentUserProfile ? [currentUserProfile] : []);
+        setSearchTerm('');
     }
-   }, [isOpen, user, form]);
+   }, [isOpen, user, form, currentUserProfile]);
+
+   useEffect(() => {
+    const memberIds = selectedUsers.map(u => u.id);
+    form.setValue('members', memberIds, { shouldValidate: true });
+   }, [selectedUsers, form]);
 
   const channelName = form.watch('name');
-  const selectedMembers = form.watch('members');
+  const memberIds = form.watch('members');
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (!channelName || channelName.length < 3 || !allUsers || allUsers.length === 0 || selectedMembers.length <= 2) {
+      if (!channelName || channelName.length < 3 || memberIds.length <= 2) {
         setSuggestions(null);
         return;
       }
       setIsLoadingSuggestions(true);
       try {
-        const memberNames = selectedMembers.map(id => {
-            const member = allUsers?.find(u => u.id === id);
-            return member?.fullName || 'user';
-        });
-
+        const memberNames = selectedUsers.map(u => u.fullName || 'user');
         const result = await getChannelAssistantSuggestions({
           channelTitle: channelName,
           memberList: memberNames,
@@ -129,15 +148,15 @@ export function CreateChannelDialog({
 
     const timeoutId = setTimeout(fetchSuggestions, 500);
     return () => clearTimeout(timeoutId);
-  }, [channelName, selectedMembers, allUsers]);
+  }, [channelName, memberIds, selectedUsers]);
 
-  const toggleMember = (memberId: string) => {
-    if (memberId === user?.uid) return; 
-    const currentMembers = form.getValues('members');
-    const newMembers = currentMembers.includes(memberId)
-      ? currentMembers.filter((id) => id !== memberId)
-      : [...currentMembers, memberId];
-    form.setValue('members', newMembers, { shouldValidate: true });
+  const toggleMember = (member: User) => {
+    if (member.id === user?.uid) return; 
+    setSelectedUsers(prev => 
+        prev.some(u => u.id === member.id)
+            ? prev.filter(u => u.id !== member.id)
+            : [...prev, member]
+    );
   };
   
   const onSubmit = (values: z.infer<typeof formSchema>) => {
@@ -149,7 +168,7 @@ export function CreateChannelDialog({
         return;
     }
 
-    const otherUserForDM = isDM ? otherUsers.find(u => u.id === values.members.find(id => id !== user.uid)) : null;
+    const otherUserForDM = isDM ? selectedUsers.find(u => u.id !== user.uid) : null;
 
     const newChannel: Omit<Channel, 'id'> = {
         name: isDM ? (otherUserForDM?.fullName || 'Direct Message') : values.name!,
@@ -171,6 +190,11 @@ export function CreateChannelDialog({
     onCreateChannel(newChannel);
     onOpenChange(false);
   };
+
+  const displayedSearchResults = useMemo(() => {
+    if (!searchedUsers) return [];
+    return searchedUsers.filter(u => u.id !== user?.uid);
+  }, [searchedUsers, user]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -200,32 +224,47 @@ export function CreateChannelDialog({
 
               <FormItem>
                 <FormLabel>Members</FormLabel>
-                <div className="flex flex-wrap gap-2 rounded-md border p-4 min-h-[80px]">
-                    {isLoadingUsers ? (
-                        <div className="flex flex-wrap gap-2">
-                            <Skeleton className="h-6 w-20 rounded-full" />
-                            <Skeleton className="h-6 w-24 rounded-full" />
-                            <Skeleton className="h-6 w-16 rounded-full" />
-                        </div>
-                    ) : (
-                        <>
-                        {user && allUsers?.find(u => u.id === user.uid) && (
-                        <Badge variant={'default'} className="cursor-not-allowed">
-                            <UserAvatar src={user.photoURL || undefined} name={user.displayName || 'You'} className="size-4 mr-2" />
-                            You
+                <div className="flex flex-wrap items-start gap-2 rounded-md border p-2 min-h-[60px]">
+                    {selectedUsers.map(u => (
+                        <Badge key={u.id} variant={'default'} className="gap-1">
+                            <UserAvatar src={u.avatarUrl} name={u.fullName || 'User'} className="size-4" />
+                            {u.id === user?.uid ? 'You' : u.fullName}
+                            {u.id !== user?.uid && (
+                                <button type="button" onClick={() => toggleMember(u)} className='ml-1 opacity-50 hover:opacity-100'>
+                                    <XIcon className='size-3'/>
+                                </button>
+                            )}
                         </Badge>
-                        )}
-                        {otherUsers.map(u => (
-                            <button type="button" key={u.id} onClick={() => toggleMember(u.id)}>
-                            <Badge variant={selectedMembers.includes(u.id) ? 'default' : 'secondary'} className="cursor-pointer">
-                                <UserAvatar src={u.avatarUrl} name={u.fullName || 'User'} className="size-4 mr-2" />
-                                {u.fullName}
-                            </Badge>
-                            </button>
-                        ))}
-                        </>
-                    )}
+                    ))}
                 </div>
+                
+                <Input
+                    placeholder="Search to add members..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                />
+                
+                <ScrollArea className="h-48 border rounded-md">
+                     <div className="p-2">
+                        {isLoadingUsers && <Loader2 className="mx-auto my-4 size-5 animate-spin" />}
+                        {!isLoadingUsers && debouncedSearchTerm && displayedSearchResults.length === 0 && <p className='text-center text-sm text-muted-foreground p-4'>No users found.</p>}
+                        {displayedSearchResults.map(u => (
+                            <Button
+                                type="button"
+                                key={u.id}
+                                variant={selectedUsers.some(su => su.id === u.id) ? 'secondary' : 'ghost'}
+                                className="w-full justify-start h-auto p-2"
+                                onClick={() => toggleMember(u)}
+                            >
+                                <UserAvatar src={u.avatarUrl} name={u.fullName || 'User'} className="mr-2" />
+                                <div>
+                                    <p>{u.fullName}</p>
+                                    <p className='text-xs text-muted-foreground'>@{u.username}</p>
+                                </div>
+                            </Button>
+                        ))}
+                    </div>
+                </ScrollArea>
                 <FormMessage>{form.formState.errors.members?.message}</FormMessage>
               </FormItem>
             </div>
@@ -237,7 +276,7 @@ export function CreateChannelDialog({
                     {isLoadingSuggestions && <Loader2 className="size-4 animate-spin"/>}
                 </div>
 
-                {suggestions && selectedMembers.length > 2 ? (
+                {suggestions && memberIds.length > 2 ? (
                     <div className="space-y-4">
                         <div>
                             <Label>Suggested Description</Label>
@@ -261,7 +300,7 @@ export function CreateChannelDialog({
                     </div>
                 ) : (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                        {selectedMembers.length <= 2 ? 'AI suggestions available for groups of 3 or more.' : 'Enter a channel name to get AI suggestions.'}
+                        {memberIds.length <= 2 ? 'AI suggestions available for groups of 3 or more.' : 'Enter a channel name to get AI suggestions.'}
                     </p>
                 )}
             </div>
