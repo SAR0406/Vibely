@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { UserAvatar } from './user-avatar';
 import { User, ChatRequest } from '@/lib/types';
 import { MessageSquarePlus } from 'lucide-react';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useDoc } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -28,27 +28,32 @@ export function UserProfileDialog({
   user,
   isOpen,
   onOpenChange,
-  onStartChat,
 }: UserProfileDialogProps) {
-    const { user: currentUser } = useUser();
+    const { user: authUser } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
 
-  if (!user || !currentUser) {
+    const currentUserDocRef = doc(firestore, 'users', authUser?.uid || '---');
+    const { data: currentUserProfile } = useDoc<User>(currentUserDocRef);
+
+
+  if (!user || !currentUserProfile) {
     return null;
   }
 
   const handleSendChatRequest = () => {
-    if (!firestore || !currentUser?.uid) return;
+    if (!firestore || !currentUserProfile) return;
 
-    const requestId = `req_${currentUser.uid}_${user.id}`;
+    // A unique ID for the request based on sender and receiver
+    const requestId = `req_${currentUserProfile.id}_${user.id}`;
+    // The request will be stored in the *recipient's* subcollection
     const requestRef = doc(firestore, 'users', user.id, 'chatRequests', requestId);
     
     const requestData: Omit<ChatRequest, 'id'> = {
-        fromUserId: currentUser.uid,
-        fromUserCode: 'temp-code', // This should be the current user's userCode
-        fromFullName: currentUser.displayName || 'Anonymous',
-        fromAvatarUrl: currentUser.photoURL || '',
+        fromUserId: currentUserProfile.id,
+        fromUserCode: currentUserProfile.userCode!,
+        fromFullName: currentUserProfile.fullName!,
+        fromAvatarUrl: currentUserProfile.avatarUrl,
         status: 'pending',
         createdAt: serverTimestamp(),
     };
