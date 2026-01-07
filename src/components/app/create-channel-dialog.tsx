@@ -65,8 +65,8 @@ export function CreateChannelDialog({
   const firestore = useFirestore();
 
   const allUsersQuery = useMemoFirebase(() => {
+    // Only construct the query if the dialog is open and firestore is available
     if (!firestore || !isOpen) return null;
-    // This query is now allowed by the updated security rules
     return query(collection(firestore, 'users'));
   }, [firestore, isOpen]);
 

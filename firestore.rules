@@ -56,24 +56,18 @@ service cloud.firestore {
     // COLLECTION: users
     //
     // This collection stores the profile information for each user.
-    // The rules are structured to allow discoverability (listing users for search)
-    // while protecting sensitive information within each user's document.
     //
     // --------------------------------------------------------------------------
     
     match /users/{userId} {
       /**
-       * @allow (get) A user can only read their OWN profile document. Public read is disabled to protect PII like email.
-       * @allow (list) ANY authenticated user can list the collection. This is crucial for user search and invite features. 
-       *              Client-side queries should be used to fetch only necessary fields (e.g., name, avatar), not the whole documents.
-       *              This fixes the "Missing or insufficient permissions" error for list operations.
+       * @allow (get, list) Any authenticated user can read/list user profiles. This is crucial for user search and profile viewing.
        * @allow (create, update) A user can only create or update THEIR OWN profile.
        * @allow (delete) Deleting user profiles is disallowed for safety.
        */
-      allow get: if isOwner(userId);
-      allow list: if isSignedIn();
+      allow get, list: if isSignedIn();
       allow create, update: if isOwner(userId);
-      allow delete: if false; // Safety: prevent users from deleting their accounts via client.
+      allow delete: if false;
     }
 
 
