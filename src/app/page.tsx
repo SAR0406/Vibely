@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { UserAvatar } from '@/components/app/user-avatar';
+import { LandingPageThemeSwitcher } from '@/components/app/landing-page-theme-switcher';
 
 const FeatureCard = ({
   icon,
@@ -90,7 +91,8 @@ export default function LandingPage() {
               Contact
             </Link>
           </nav>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <LandingPageThemeSwitcher />
             <Button variant="ghost" asChild>
               <Link href="/login">Log in</Link>
             </Button>
@@ -112,7 +114,7 @@ export default function LandingPage() {
               Smarter Communication, Seamless Collaboration
             </div>
             <h1 className="font-headline text-4xl font-bold tracking-tighter text-foreground md:text-6xl">
-              Elevate Your Team's Communication
+              Where Great Conversations Happen
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
               Vibely is the AI-powered messaging platform that organizes your
