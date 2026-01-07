@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, limit, orderBy } from 'firebase/firestore';
 import type { User } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 
@@ -38,11 +38,14 @@ export function SidebarSearchDialog({
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !debouncedSearchTerm) return null;
     
-    // Query the userDirectory collection now
+    // This query finds users where the userCode is a prefix match.
+    // It's a common pattern for simple search functionality in Firestore.
     return query(
       collection(firestore, 'userDirectory'),
+      orderBy('userCode'),
       where('userCode', '>=', debouncedSearchTerm),
-      where('userCode', '<=', debouncedSearchTerm + '\uf8ff')
+      where('userCode', '<=', debouncedSearchTerm + '\uf8ff'),
+      limit(10) // Limit results to prevent fetching too much data
     );
   }, [firestore, debouncedSearchTerm]);
 

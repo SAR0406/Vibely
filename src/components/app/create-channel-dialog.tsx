@@ -33,7 +33,7 @@ import {
 import { UserAvatar } from './user-avatar';
 import { Channel, User } from '@/lib/types';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { collection, query, where, doc, orderBy, limit } from 'firebase/firestore';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ScrollArea } from '../ui/scroll-area';
 
@@ -81,9 +81,11 @@ export function CreateChannelDialog({
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !debouncedSearchTerm) return null;
     return query(
-      collection(firestore, 'users'),
+      collection(firestore, 'userDirectory'),
+      orderBy('userCode'),
       where('userCode', '>=', debouncedSearchTerm),
-      where('userCode', '<=', debouncedSearchTerm + '\uf8ff')
+      where('userCode', '<=', debouncedSearchTerm + '\uf8ff'),
+      limit(10)
     );
   }, [firestore, debouncedSearchTerm]);
 
