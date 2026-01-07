@@ -78,7 +78,7 @@ export default function LandingPage() {
               <Sparkles className="mr-2 inline h-4 w-4 text-primary" />
               AI-Powered Channel Assistance
             </div>
-            <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-6xl">
+            <h1 className="font-headline text-4xl font-bold tracking-tighter text-foreground md:text-6xl">
               Where Great Conversations Happen
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
