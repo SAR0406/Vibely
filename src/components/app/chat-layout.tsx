@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -13,7 +13,7 @@ import {
   SidebarMenuButton,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { MessageSquare, PlusCircle, Users, LogOut, Search } from 'lucide-react';
+import { MessageSquare, PlusCircle, Users, LogOut, Search, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { Channel, User as UserType } from '@/lib/types';
@@ -30,8 +30,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAuth, useUser, useDoc, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where } from 'firebase/firestore';
+import { doc, collection, query, where, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Skeleton } from '../ui/skeleton';
 
 const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -121,9 +122,8 @@ export default function ChatLayout() {
   const handleStartDirectMessage = (otherUser: UserType) => {
     if (!currentUser) return;
   
-    // Check if a DM channel already exists
     const existingChannel = channels?.find(c => 
-      c.type === 'private' &&
+      c.isDM &&
       c.members.length === 2 &&
       c.members.includes(currentUser.id) &&
       c.members.includes(otherUser.id)
@@ -132,7 +132,6 @@ export default function ChatLayout() {
     if (existingChannel) {
       handleSelectChannel(existingChannel.id);
     } else {
-      // Create a new DM channel
       const channelId = `dm-${[currentUser.id, otherUser.id].sort().join('-')}`;
       const channelRef = doc(firestore, 'channels', channelId);
       const newChannel: Channel = {
@@ -140,7 +139,8 @@ export default function ChatLayout() {
         name: otherUser.fullName || otherUser.username || 'Direct Message',
         description: `Direct message with ${otherUser.fullName}`,
         members: [currentUser.id, otherUser.id],
-        type: 'private',
+        isDM: true,
+        isPublic: false,
         ownerId: currentUser.id, // Or handle ownership differently for DMs
         automations: [],
       };
@@ -152,12 +152,20 @@ export default function ChatLayout() {
   };
 
   const handleLogout = async () => {
+    if (user) {
+        const userStatusRef = doc(firestore, 'users', user.uid);
+        await updateDoc(userStatusRef, {
+            online: false,
+            lastSeen: serverTimestamp(),
+        });
+    }
     await auth.signOut();
     router.push('/login');
   };
 
-  const publicChannels = useMemo(() => channels?.filter((c) => c.type === 'public') || [], [channels]);
-  const privateChannels = useMemo(() => channels?.filter((c) => c.type === 'private') || [], [channels]);
+  const publicChannels = useMemo(() => channels?.filter((c) => c.isPublic && !c.isDM) || [], [channels]);
+  const groupDMs = useMemo(() => channels?.filter(c => c.isDM && c.members.length > 2) || [], [channels]);
+  const directMessages = useMemo(() => channels?.filter(c => c.isDM && c.members.length === 2) || [], [channels]);
 
 
   return (
@@ -196,44 +204,83 @@ export default function ChatLayout() {
                         Search users
                     </TooltipContent>
                 </Tooltip>
-                <div>
-                  <p className="px-2 text-xs font-semibold uppercase text-muted-foreground group-data-[collapsible=icon]:hidden">
-                    Channels
-                  </p>
-                  <SidebarMenu>
-                    {publicChannels.map((channel) => (
-                      <SidebarMenuItem key={channel.id}>
-                        <SidebarMenuButton
-                          onClick={() => handleSelectChannel(channel.id)}
-                          isActive={selectedChannelId === channel.id}
-                          tooltip={channel.name}
-                        >
-                          <MessageSquare />
-                          <span>{channel.name}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </div>
-                <div>
-                  <p className="px-2 text-xs font-semibold uppercase text-muted-foreground group-data-[collapsible=icon]:hidden">
-                    Direct Messages
-                  </p>
-                  <SidebarMenu>
-                    {privateChannels.map((channel) => (
-                      <SidebarMenuItem key={channel.id}>
-                        <SidebarMenuButton
-                          onClick={() => handleSelectChannel(channel.id)}
-                          isActive={selectedChannelId === channel.id}
-                          tooltip={channel.name}
-                        >
-                          <Users />
-                          <span>{channel.name}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </div>
+
+                {channelsLoading ? (
+                    <div className="space-y-2 p-2">
+                        <Skeleton className="h-8 w-full" />
+                        <Skeleton className="h-8 w-full" />
+                        <Skeleton className="h-8 w-full" />
+                    </div>
+                ) : (
+                    <>
+                        {publicChannels.length > 0 && (
+                        <div>
+                        <p className="px-2 text-xs font-semibold uppercase text-muted-foreground group-data-[collapsible=icon]:hidden">
+                            Channels
+                        </p>
+                        <SidebarMenu>
+                            {publicChannels.map((channel) => (
+                            <SidebarMenuItem key={channel.id}>
+                                <SidebarMenuButton
+                                onClick={() => handleSelectChannel(channel.id)}
+                                isActive={selectedChannelId === channel.id}
+                                tooltip={channel.name}
+                                >
+                                <MessageSquare />
+                                <span>{channel.name}</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                        </div>
+                        )}
+
+                        {groupDMs.length > 0 && (
+                             <div>
+                             <p className="px-2 text-xs font-semibold uppercase text-muted-foreground group-data-[collapsible=icon]:hidden">
+                                 Group DMs
+                             </p>
+                             <SidebarMenu>
+                                 {groupDMs.map((channel) => (
+                                 <SidebarMenuItem key={channel.id}>
+                                     <SidebarMenuButton
+                                     onClick={() => handleSelectChannel(channel.id)}
+                                     isActive={selectedChannelId === channel.id}
+                                     tooltip={channel.name}
+                                     >
+                                     <Users />
+                                     <span>{channel.name}</span>
+                                     </SidebarMenuButton>
+                                 </SidebarMenuItem>
+                                 ))}
+                             </SidebarMenu>
+                             </div>
+                        )}
+
+                        {directMessages.length > 0 && (
+                            <div>
+                                <p className="px-2 text-xs font-semibold uppercase text-muted-foreground group-data-[collapsible=icon]:hidden">
+                                Direct Messages
+                                </p>
+                                <SidebarMenu>
+                                {directMessages.map((channel) => (
+                                    <SidebarMenuItem key={channel.id}>
+                                        <SidebarMenuButton
+                                        onClick={() => handleSelectChannel(channel.id)}
+                                        isActive={selectedChannelId === channel.id}
+                                        tooltip={channel.name}
+                                        >
+                                        <User />
+                                        <span>{channel.name}</span>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                                </SidebarMenu>
+                            </div>
+                        )}
+                    </>
+                )}
+
               </div>
             </SidebarContent>
             <SidebarFooter className="p-2">
@@ -261,18 +308,18 @@ export default function ChatLayout() {
               <div className="flex flex-col items-center gap-2 group-data-[collapsible=expanded]:items-stretch">
                 <ThemeSwitcher />
                 <div className="flex items-center gap-3 rounded-lg p-2 transition-colors duration-200 hover:bg-muted group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
-                  {currentUser && (
+                  {currentUser ? (
                     <>
                       <UserAvatar
                         src={currentUser.avatarUrl}
                         name={currentUser.name}
-                        isOnline
+                        isOnline={currentUser.online}
                       />
                       <div className="flex-1 group-data-[collapsible=icon]:hidden">
                         <p className="text-sm font-semibold">
                           {currentUser.name}
                         </p>
-                        <p className="text-xs text-muted-foreground">Online</p>
+                        <p className="text-xs text-muted-foreground">{currentUser.online ? 'Online' : 'Offline'}</p>
                       </div>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -293,6 +340,11 @@ export default function ChatLayout() {
                         </TooltipContent>
                       </Tooltip>
                     </>
+                  ) : (
+                    <div className='flex items-center gap-2 w-full'>
+                        <Skeleton className="size-8 rounded-full" />
+                        <Skeleton className="h-4 w-24 group-data-[collapsible=icon]:hidden" />
+                    </div>
                   )}
                 </div>
               </div>

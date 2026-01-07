@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Paperclip, Send, Settings, Smile } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { collection, query, orderBy, doc, where } from 'firebase/firestore';
+import { collection, query, orderBy, doc, where, writeBatch, getDocs } from 'firebase/firestore';
 
 import { cn } from '@/lib/utils';
 import type { Channel, Message, User } from '@/lib/types';
@@ -15,7 +15,9 @@ import { ChatMessage } from './message';
 import { AutomationSettingsDialog } from './automation-settings-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import Image from 'next/image';
-import { useCollection, useDoc, useFirestore, addDocumentNonBlocking, updateDocumentNonBlocking, useMemoFirebase } from '@/firebase';
+import { useCollection, useDoc, useFirestore, addDocumentNonBlocking, updateDocumentNonBlocking, useMemoFirebase, useUser } from '@/firebase';
+import { formatDistanceToNow } from 'date-fns';
+
 
 function useMessages(channelId: string | null) {
   const firestore = useFirestore();
@@ -31,11 +33,27 @@ function useMessages(channelId: string | null) {
   return useCollection<Message>(messagesQuery);
 }
 
-function AvatarGroup({ userIds, allUsers }: { userIds: string[], allUsers: User[] }) {
-    const displayedUsers = userIds
+function AvatarGroup({ userIds, allUsers, currentUser }: { userIds: string[], allUsers: User[], currentUser: User | null }) {
+    const otherUserIds = userIds.filter(id => id !== currentUser?.id);
+    const displayedUsers = otherUserIds
       .map((id) => allUsers.find((u) => u.id === id))
       .filter(Boolean) as User[];
   
+    if (userIds.length <= 2) {
+        const otherUser = displayedUsers[0];
+        return (
+            <div className='flex items-center gap-3'>
+                {otherUser ? <UserAvatar src={otherUser.avatarUrl} name={otherUser.name} isOnline={otherUser.online} /> : <div className='size-8'/>}
+                <div>
+                    <h2 className="font-headline text-lg font-semibold">{otherUser?.name || 'User'}</h2>
+                    <p className="text-sm text-muted-foreground">
+                        {otherUser?.online ? 'Online' : (otherUser?.lastSeen ? `Last seen ${formatDistanceToNow(new Date(otherUser.lastSeen.toDate()), { addSuffix: true })}` : 'Offline')}
+                    </p>
+                </div>
+            </div>
+        )
+    }
+
     return (
       <div className="flex -space-x-2 overflow-hidden">
         {displayedUsers.slice(0, 3).map((user) => (
@@ -66,24 +84,46 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
 
-  const { data: messages } = useMessages(channel?.id || null);
+  const { data: messages, isLoading: messagesLoading } = useMessages(channel?.id || null);
 
   const channelUsersQuery = useMemoFirebase(() => {
     if (!firestore || !channel || channel.members.length === 0) return null;
-    // Fetch documents for users who are members of the channel
     return query(collection(firestore, 'users'), where('id', 'in', channel.members));
   }, [firestore, channel]);
 
   const { data: channelUsers } = useCollection<User>(channelUsersQuery);
+
+  const markMessagesAsRead = async () => {
+    if (!channel || !currentUser || messagesLoading || !messages) return;
+
+    const batch = writeBatch(firestore);
+    const unreadMessages = messages.filter(
+        (msg) => msg.authorId !== currentUser.id && msg.readStatus !== 'read'
+    );
+
+    if (unreadMessages.length > 0) {
+        unreadMessages.forEach((msg) => {
+            const msgRef = doc(firestore, 'channels', channel.id, 'messages', msg.id);
+            batch.update(msgRef, { readStatus: 'read' });
+        });
+        await batch.commit();
+    }
+  };
+
+  useEffect(() => {
+    markMessagesAsRead();
+  }, [channel?.id, messages, currentUser?.id]);
   
   useEffect(() => {
     if (scrollViewportRef.current) {
-      scrollViewportRef.current.scrollTo({
-        top: scrollViewportRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
+      setTimeout(() => {
+        scrollViewportRef.current?.scrollTo({
+            top: scrollViewportRef.current.scrollHeight,
+            behavior: 'smooth',
+        });
+      }, 100);
     }
-  }, [messages]);
+  }, [messages, channel?.id]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,8 +132,8 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
       addDocumentNonBlocking(messagesColRef, {
         authorId: currentUser.id,
         content: inputValue.trim(),
-        timestamp: new Date().toISOString(),
-        readStatus: 'sent',
+        timestamp: new Date(),
+        readStatus: null,
       });
       setInputValue('');
     }
@@ -128,6 +168,21 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
     );
   }
 
+  const isDM = channel.members.length === 2 && channel.isDM;
+  const headerContent = isDM ? (
+    channelUsers && <AvatarGroup userIds={channel.members} allUsers={channelUsers} currentUser={currentUser} />
+  ) : (
+    <>
+        {channelUsers && <AvatarGroup userIds={channel.members} allUsers={channelUsers} currentUser={currentUser} />}
+        <div>
+            <h2 className="font-headline text-lg font-semibold">{channel.name}</h2>
+            <p className="text-sm text-muted-foreground">
+            {channel.description}
+            </p>
+        </div>
+    </>
+  );
+
   return (
     <motion.div
       key={channel.id}
@@ -138,24 +193,20 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
     >
       <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background/80 p-4 backdrop-blur-sm">
         <div className="flex items-center gap-4">
-          {channelUsers && <AvatarGroup userIds={channel.members} allUsers={channelUsers} />}
-          <div>
-            <h2 className="font-headline text-lg font-semibold">{channel.name}</h2>
-            <p className="text-sm text-muted-foreground">
-              {channel.description}
-            </p>
-          </div>
+          {headerContent}
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)}>
-          <Settings className="h-5 w-5" />
-          <span className="sr-only">Channel Settings</span>
-        </Button>
+        {!isDM && (
+            <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)}>
+            <Settings className="h-5 w-5" />
+            <span className="sr-only">Channel Settings</span>
+            </Button>
+        )}
       </header>
 
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
           <div className="space-y-6 p-4 md:p-8">
-            {messages && channelUsers && messages.map((message, index) => {
+            {messages && channelUsers && messages.map((message) => {
               const author = channelUsers.find((u) => u.id === message.authorId);
               if (!author) return null; // Or a placeholder
               return (
@@ -207,12 +258,12 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
           </Button>
         </form>
       </footer>
-      <AutomationSettingsDialog 
+      {!isDM && <AutomationSettingsDialog 
         channel={channel}
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         onAutomationsUpdate={handleAutomationsUpdate}
-      />
+      />}
     </motion.div>
   );
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check, CheckCheck } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { Message, User } from '@/lib/types';
 import { UserAvatar } from './user-avatar';
@@ -33,8 +33,7 @@ export function ChatMessage({ message, author, isSender }: MessageProps) {
   }, [message.timestamp]);
 
 
-  const ReadStatusIcon =
-    message.readStatus === 'read' ? CheckCheck : Check;
+  const ReadStatusIcon = message.readStatus === 'read' ? CheckCheck : Check;
 
   return (
     <motion.div

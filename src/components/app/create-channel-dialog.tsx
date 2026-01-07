@@ -64,7 +64,6 @@ export function CreateChannelDialog({
   const { user } = useUser();
   const firestore = useFirestore();
 
-  // Query for all users, only if the dialog is open.
   const allUsersQuery = useMemoFirebase(() => {
     if (!firestore || !isOpen) return null;
     return query(collection(firestore, 'users'));
@@ -142,11 +141,13 @@ export function CreateChannelDialog({
   
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     if(!user) return;
+    const isDM = values.members.length === 2;
     const newChannel: Omit<Channel, 'id'> = {
-        name: values.name,
+        name: isDM ? (otherUsers.find(u => u.id === values.members.find(id => id !== user.uid))?.fullName || 'Direct Message') : values.name,
         description: suggestions?.descriptionSuggestion || `A channel for ${values.name}`,
         members: values.members,
-        type: values.members.length > 2 ? 'private' : 'public',
+        isPublic: !isDM,
+        isDM: isDM,
         ownerId: user.uid,
         automations: allAutomationSuggestions
             .filter(auto => enabledAutomations[auto.name])
@@ -166,9 +167,9 @@ export function CreateChannelDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-headline">Create a New Channel</DialogTitle>
+          <DialogTitle className="font-headline">Create a New Channel or DM</DialogTitle>
           <DialogDescription>
-            Name your channel and invite members to start collaborating.
+            Select one person for a direct message, or multiple for a private group. You can also create a public channel.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -179,7 +180,7 @@ export function CreateChannelDialog({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Channel Name</FormLabel>
+                    <FormLabel>Channel Name (optional for DMs)</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g. Q4-Launch-Plan" {...field} />
                     </FormControl>
@@ -258,7 +259,7 @@ export function CreateChannelDialog({
 
             <DialogFooter className="md:col-span-2 mt-4">
               <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit">Create Channel</Button>
+              <Button type="submit">Create</Button>
             </DialogFooter>
           </form>
         </Form>
