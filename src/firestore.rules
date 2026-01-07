@@ -5,9 +5,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // --------------------------------------------------------------------------
-    //
     // HELPER FUNCTIONS
-    //
     // --------------------------------------------------------------------------
 
     /**
@@ -40,32 +38,31 @@ service cloud.firestore {
     function isChannelOwner(channelId) {
         return isSignedIn() && request.auth.uid == get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId;
     }
+    
 
     // --------------------------------------------------------------------------
-    //
     // COLLECTION: users
-    //
     // --------------------------------------------------------------------------
-
+    
+    // By default, disallow all reads and writes to the users collection.
+    // Specific rules below will grant targeted access.
     match /users/{userId} {
       /**
        * @allow (get) Any authenticated user can read another user's profile. This is necessary for DMs and search.
        * @allow (create, update) A user can only create or update THEIR OWN profile.
        * @allow (delete) Deleting user profiles is disallowed for safety.
-       * @allow (list) This is explicitly disallowed to prevent scraping all users. 
+       * @allow (list) This is explicitly disallowed to prevent scraping all users.
        *              Users must be found via a targeted query (e.g., by userCode).
        */
       allow get: if isSignedIn();
       allow create, update: if isOwner(userId);
-      allow delete: if false; 
-      allow list: if false; // IMPORTANT: Prevents listing all users.
+      allow delete: if false;
+      allow list: if false; // CRITICAL: Forbid listing all users.
     }
-    
+
 
     // --------------------------------------------------------------------------
-    //
     // COLLECTION: channels and subcollections
-    //
     // --------------------------------------------------------------------------
 
     match /channels/{channelId} {

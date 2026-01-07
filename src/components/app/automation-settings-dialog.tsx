@@ -41,8 +41,12 @@ export function AutomationSettingsDialog({
   const firestore = useFirestore();
   
   const channelUsersQuery = useMemoFirebase(() => {
+    // Only run query if we have a channel with members
     if (!firestore || !channel || channel.members.length === 0) return null;
+    
     // Fetch documents for users who are members of the channel
+    // Firestore 'in' queries are limited to 30 items. 
+    // If a channel can have more members, this would need pagination or a different approach.
     return query(collection(firestore, 'users'), where('id', 'in', channel.members));
   }, [firestore, channel]);
 
@@ -79,9 +83,7 @@ export function AutomationSettingsDialog({
         return acc;
       }, {} as Record<string, string>);
 
-      const memberList = channel.members.map(
-        (id) => channelUsers?.find((u) => u.id === id)?.fullName || 'Unknown'
-      );
+      const memberList = channelUsers?.map(u => u.fullName || 'User') || [];
 
       await enableAdjustAutomations({
         channelName: channel.name,
