@@ -155,6 +155,14 @@ export default function SignupPage() {
     // Generate a unique user code
     const userCode = `${username}#${Math.floor(1000 + Math.random() * 9000)}`;
 
+    const searchableTerms = [
+      ...new Set([
+          username.toLowerCase(),
+          fullName.toLowerCase(),
+          ...fullName.toLowerCase().split(' ')
+      ])
+    ].filter(Boolean);
+
     // Create user profile
     setDocumentNonBlocking(
       userDocRef,
@@ -179,6 +187,7 @@ export default function SignupPage() {
         userCode,
         fullName,
         avatarUrl: finalAvatarUrl,
+        searchableTerms,
       },
       { merge: false } // Use merge: false for new doc
     );
@@ -476,3 +485,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    

@@ -60,3 +60,5 @@ export type ChatRequest = {
     status: 'pending' | 'accepted' | 'declined';
     createdAt: any;
 }
+
+    
