@@ -175,6 +175,19 @@
             "type": ["string", "null"],
             "enum": ["read", null],
             "description": "Indicates if the message has been read by recipients."
+        },
+        "reactions": {
+          "type": "array",
+          "description": "A list of reactions to the message.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "emoji": { "type": "string" },
+              "userId": { "type": "string" },
+              "username": { "type": "string" }
+            },
+            "required": ["emoji", "userId", "username"]
+          }
         }
       },
       "required": ["id", "authorId", "content", "timestamp"]

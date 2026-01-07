@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Paperclip, Send, Settings, Smile } from 'lucide-react';
+import { Paperclip, Send, Settings } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { collection, query, orderBy, doc, where, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 
-import { cn } from '@/lib/utils';
 import type { Chat, Message, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +18,7 @@ import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Skeleton } from '../ui/skeleton';
+import { ReactionPicker } from './reaction-picker';
 
 
 function useMessages(chatId: string | null) {
@@ -118,7 +118,8 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
   const { data: chatUsers } = useCollection<User>(chatUsersQuery);
 
   const isDM = chat?.isDM && chat?.members.length === 2;
-  const otherUserIdInDM = isDM ? chat?.members.find(id => id !== currentUser?.id) : null;
+  const otherUserIdInDM = isDM && chat?.members.find(id => id !== currentUser?.id);
+
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,6 +130,7 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
         content: inputValue.trim(),
         timestamp: serverTimestamp(),
         readStatus: null,
+        reactions: [],
       });
       setInputValue('');
     }
@@ -207,7 +209,7 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
     );
   }, [isDM, otherUserIdInDM, chat, chatUsers, currentUser]);
 
-  if (!chat) {
+  if (!chat || !currentUser) {
     return (
       <AnimatePresence>
         <motion.div
@@ -260,9 +262,11 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
               return (
                 <ChatMessage
                   key={message.id}
+                  chatId={chat.id}
                   message={message}
                   author={author}
                   isSender={message.authorId === currentUser?.id}
+                  currentUser={currentUser}
                 />
               );
             })}
@@ -289,15 +293,19 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
               placeholder="Type a message..."
               className="rounded-full bg-muted pr-10"
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              type="button"
-              className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-muted/50"
-            >
-              <Smile className="h-5 w-5 text-muted-foreground" />
-              <span className="sr-only">Add emoji</span>
-            </Button>
+             <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                <ReactionPicker onSelect={(emoji) => setInputValue(prev => prev + emoji)}>
+                    <Button
+                    variant="ghost"
+                    size="icon"
+                    type="button"
+                    className="h-8 w-8 hover:bg-muted/50"
+                    >
+                    <p className="text-xl">🙂</p>
+                    <span className="sr-only">Add emoji</span>
+                    </Button>
+                </ReactionPicker>
+            </div>
           </div>
 
           <Button type="submit" size="icon" disabled={!inputValue.trim()} className="rounded-full">

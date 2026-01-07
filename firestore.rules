@@ -40,6 +40,25 @@ service cloud.firestore {
     function isChatOwner(chatId) {
         return isSignedIn() && request.auth.uid == get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId;
     }
+    
+    /**
+     * Helper function to check if the incoming reactions list is valid.
+     * Ensures a user can only add or remove their own reaction.
+     */
+    function isValidReactionUpdate(currentReactions, newReactions) {
+        // Allow adding a reaction if the user is not already in the list for that emoji
+        let addedReaction = newReactions.size() == currentReactions.size() + 1 &&
+                              newReactions.filter(r => r.userId == request.auth.uid).size() == 1;
+        
+        // Allow removing a reaction if the user was in the list
+        let removedReaction = newReactions.size() == currentReactions.size() - 1 &&
+                                newReactions.filter(r => r.userId == request.auth.uid).size() == 0;
+        
+        let noOtherUserReactionsChanged = newReactions.filter(r => r.userId != request.auth.uid)
+                                           .size() == currentReactions.filter(r => r.userId != request.auth.uid).size();
+
+        return (addedReaction || removedReaction) && noOtherUserReactionsChanged;
+    }
 
     // --------------------------------------------------------------------------
     //
@@ -51,7 +70,7 @@ service cloud.firestore {
       /**
        * @allow (get) Any authenticated user can read another user's profile to see their name, avatar, etc.
        * @allow (create) A user can only create THEIR OWN profile.
-       * @allow (update) A user can only update THEIR OWN profile, either the whole document or just presence status.
+       * @allow (update) A user can only update THEIR OWN profile.
        * @allow (delete) Deleting user profiles is disallowed for safety.
        * @allow (list) This is explicitly disallowed to prevent scraping all users.
        */
@@ -116,12 +135,15 @@ service cloud.firestore {
         /**
          * @allow (read, list) Users can only read messages if they are a member of the parent chat.
          * @allow (create) A user can only create a message if they are a chat member, and they must be the author.
-         * @allow (update) Users can only update their own messages.
+         * @allow (update) Users can update their own messages OR add/remove a reaction.
          * @allow (delete) Users can delete their own messages. chat owners can also delete any message in their chat.
          */
         allow read, list: if isChatMember(chatId);
         allow create: if isChatMember(chatId) && request.resource.data.authorId == request.auth.uid;
-        allow update: if isChatMember(chatId) && resource.data.authorId == request.auth.uid;
+        allow update: if isChatMember(chatId) && (
+                        (resource.data.authorId == request.auth.uid && request.resource.data.keys().hasOnly(['content', 'updatedAt'])) ||
+                        (request.resource.data.keys().hasOnly(['reactions', 'updatedAt']) && isValidReactionUpdate(resource.data.reactions, request.resource.data.reactions))
+                      );
         allow delete: if isChatMember(chatId) && (resource.data.authorId == request.auth.uid || isChatOwner(chatId));
       }
     }

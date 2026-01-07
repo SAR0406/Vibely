@@ -14,6 +14,12 @@ export type User = {
   searchableTerms?: string[];
 };
 
+export type Reaction = {
+  emoji: string;
+  userId: string;
+  username: string;
+};
+
 export type Message = {
   id: string;
   chatId?: string; // Made optional as it's part of the subcollection path
@@ -21,6 +27,7 @@ export type Message = {
   content: string;
   timestamp: any; // Can be a server timestamp or a Date object
   readStatus: 'read' | null;
+  reactions?: Reaction[];
 };
 
 export type Chat = {
