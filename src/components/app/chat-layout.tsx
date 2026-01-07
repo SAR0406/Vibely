@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useAuth, useUser, useDoc, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, where, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Skeleton } from '../ui/skeleton';
 
 const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
@@ -85,13 +85,42 @@ export default function ChatLayout() {
 
   const { data: currentUserProfile } = useDoc<UserType>(userDocRef);
 
+  // Real-time presence management
+  useEffect(() => {
+    if (user && firestore) {
+      const userStatusRef = doc(firestore, 'users', user.uid);
+      
+      // Set user to online when the component mounts (app is active)
+      updateDocumentNonBlocking(userStatusRef, { online: true });
+
+      const handleBeforeUnload = () => {
+        // This is a failsafe for when the user closes the tab/browser
+        updateDoc(userStatusRef, {
+          online: false,
+          lastSeen: serverTimestamp(),
+        });
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        // Set user to offline when the component unmounts (e.g., logout)
+        updateDocumentNonBlocking(userStatusRef, {
+          online: false,
+          lastSeen: serverTimestamp(),
+        });
+      };
+    }
+  }, [user, firestore]);
+
   const currentUser = useMemo(() => {
     if (!user || !currentUserProfile) return null;
     return {
       id: user.uid,
       name: currentUserProfile.fullName || 'User',
       avatarUrl: currentUserProfile.avatarUrl || '',
-      online: true,
+      online: currentUserProfile.online || false, // Use live status
       ...currentUserProfile,
     };
   }, [user, currentUserProfile]);
@@ -154,6 +183,7 @@ export default function ChatLayout() {
   const handleLogout = async () => {
     if (user) {
         const userStatusRef = doc(firestore, 'users', user.uid);
+        // Explicitly set offline status before signing out
         await updateDoc(userStatusRef, {
             online: false,
             lastSeen: serverTimestamp(),
