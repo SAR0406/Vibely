@@ -12,10 +12,10 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { MessageSquare, Users, LogOut, Search, Bell, UserPlus, Settings, Edit } from 'lucide-react';
+import { MessageSquare, Users, LogOut, Search, Bell, UserPlus, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import type { Chat, User as UserType, Message, ChatRequest } from '@/lib/types';
+import type { Chat, User as UserType, Message, ChatRequest, Automation } from '@/lib/types';
 import { ChatView } from './chat-view';
 import { UserAvatar } from './user-avatar';
 import { FindPeopleDialog } from './find-people-dialog';
@@ -37,7 +37,6 @@ import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../ui/dropdown-menu';
-import { CreateChatDialog } from './create-chat-dialog';
 
 const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -127,7 +126,6 @@ export default function ChatLayout() {
   const [isFindPeopleOpen, setIsFindPeopleOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isRequestsOpen, setIsRequestsOpen] = useState(false);
-  const [isCreateChatOpen, setIsCreateChatOpen] = useState(false);
   const [selectedUserForProfile, setSelectedUserForProfile] = useState<UserType | null>(null);
 
   const router = useRouter();
@@ -233,7 +231,7 @@ export default function ChatLayout() {
     
     const chatId = isDM 
       ? `dm-${newChatData.members.sort().join('-')}`
-      : doc(collection(firestore, 'chats')).id; // Generate a unique ID for group chats
+      : doc(collection(firestore, 'chats')).id;
       
     const chatRef = doc(firestore, 'chats', chatId);
     const chatWithId = { ...newChatData, id: chatId };
@@ -241,7 +239,7 @@ export default function ChatLayout() {
     setDocumentNonBlocking(chatRef, chatWithId, {merge: false});
 
     handleSelectChat(chatId);
-    setIsCreateChatOpen(false); // Close dialog after creation
+    setIsFindPeopleOpen(false);
   };
 
   const handleShowUserProfile = (userToShow: UserType) => {
@@ -319,13 +317,6 @@ export default function ChatLayout() {
                   <Link href="/" className='p-2'>
                     <ChevronsRight className="size-8 text-primary" />
                   </Link>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsFindPeopleOpen(true)}
-                  >
-                    <Search className="size-5" />
-                  </Button>
                 </SidebarHeader>
                 <SidebarContent className="p-2">
                   <div className="flex flex-col gap-4">
@@ -404,7 +395,7 @@ export default function ChatLayout() {
                   <Button
                     variant="ghost"
                     className="w-full justify-center gap-2"
-                    onClick={() => setIsCreateChatOpen(true)}
+                    onClick={() => setIsFindPeopleOpen(true)}
                   >
                     <UserPlus className="size-4" />
                     <span>New Chat</span>
@@ -483,16 +474,9 @@ export default function ChatLayout() {
               isOpen={isFindPeopleOpen}
               onOpenChange={setIsFindPeopleOpen}
               onSelectUser={handleShowUserProfile}
+              onCreateChat={handleCreateChat}
               currentUser={currentUser}
             />
-            )}
-            {currentUser && (
-                <CreateChatDialog
-                    isOpen={isCreateChatOpen}
-                    onOpenChange={setIsCreateChatOpen}
-                    onCreateChat={handleCreateChat}
-                    currentUser={currentUser}
-                />
             )}
             {currentUser && (
               <>

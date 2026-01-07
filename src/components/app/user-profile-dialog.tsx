@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from './user-avatar';
 import { User, ChatRequest } from '@/lib/types';
-import { MessageSquarePlus, Edit } from 'lucide-react';
+import { MessageSquarePlus, Edit, Camera } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -44,7 +44,7 @@ export function UserProfileDialog({
 
     useEffect(() => {
         if(isOpen) {
-            setIsEditing(false); // Reset editing state on open
+            setIsEditing(false);
             setFullName(user?.fullName || '');
             setUsername(user?.username || '');
         }
@@ -116,11 +116,16 @@ export function UserProfileDialog({
   const dialogContent = isEditing ? (
     <>
       <DialogHeader className="items-center text-center">
-        <UserAvatar
-          src={user.avatarUrl}
-          name={user.fullName || 'User'}
-          className="size-24"
-        />
+        <div className="relative group">
+            <UserAvatar
+            src={user.avatarUrl}
+            name={user.fullName || 'User'}
+            className="size-24"
+            />
+            <Button variant="ghost" size="icon" className="absolute inset-0 m-auto h-12 w-12 rounded-full bg-black/50 opacity-0 group-hover:opacity-100">
+                <Camera className="size-6 text-white"/>
+            </Button>
+        </div>
          <DialogTitle className="font-headline text-2xl pt-4">
             Edit Profile
         </DialogTitle>

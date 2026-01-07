@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useReducer } from 'react';
 import { Paperclip, Send, Settings, SmilePlus } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { collection, query, orderBy, doc, where, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, doc, where, writeBatch, serverTimestamp, onSnapshot, DocumentChange } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 
 import type { Chat, Message, User } from '@/lib/types';
@@ -20,19 +20,95 @@ import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/no
 import { Skeleton } from '../ui/skeleton';
 import { ReactionPicker } from './reaction-picker';
 
+type MessagesState = {
+  messages: Message[];
+  isLoading: boolean;
+  error: Error | null;
+};
+
+type MessagesAction =
+  | { type: 'loading' }
+  | { type: 'added'; payload: DocumentChange<Message> }
+  | { type: 'modified'; payload: DocumentChange<Message> }
+  | { type: 'removed'; payload: DocumentChange<Message> }
+  | { type: 'error'; payload: Error }
+  | { type: 'clear' };
+
+function messagesReducer(state: MessagesState, action: MessagesAction): MessagesState {
+  switch (action.type) {
+    case 'loading':
+      return { ...state, isLoading: true, error: null };
+    case 'added': {
+      const newMessage = { ...action.payload.doc.data(), id: action.payload.doc.id };
+      if (state.messages.some(m => m.id === newMessage.id)) {
+        return state; // Already exists
+      }
+      return {
+        ...state,
+        isLoading: false,
+        messages: [...state.messages, newMessage].sort((a, b) => a.timestamp?.toMillis() - b.timestamp?.toMillis()),
+      };
+    }
+    case 'modified': {
+        const modifiedMessage = { ...action.payload.doc.data(), id: action.payload.doc.id };
+        return {
+            ...state,
+            isLoading: false,
+            messages: state.messages.map(m => m.id === modifiedMessage.id ? modifiedMessage : m),
+        };
+    }
+    case 'removed':
+      return {
+        ...state,
+        isLoading: false,
+        messages: state.messages.filter(m => m.id !== action.payload.doc.id),
+      };
+    case 'error':
+      return { ...state, isLoading: false, error: action.payload };
+    case 'clear':
+        return { messages: [], isLoading: false, error: null };
+    default:
+      return state;
+  }
+}
 
 function useMessages(chatId: string | null) {
   const firestore = useFirestore();
+  const [state, dispatch] = useReducer(messagesReducer, {
+    messages: [],
+    isLoading: true,
+    error: null,
+  });
 
-  const messagesQuery = useMemoFirebase(() => {
-    if (!firestore || !chatId) return null;
-    return query(
+  useEffect(() => {
+    if (!firestore || !chatId) {
+        dispatch({ type: 'clear' });
+        return;
+    }
+
+    dispatch({ type: 'loading' });
+
+    const messagesQuery = query(
       collection(firestore, 'chats', chatId, 'messages'),
       orderBy('timestamp', 'asc')
     );
-  }, [firestore, chatId]);
 
-  return useCollection<Message>(messagesQuery);
+    const unsubscribe = onSnapshot(
+      messagesQuery,
+      (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          dispatch({ type: change.type, payload: change as DocumentChange<Message> });
+        });
+      },
+      (err) => {
+        dispatch({ type: 'error', payload: err });
+      }
+    );
+
+    return () => unsubscribe();
+  }, [chatId, firestore]);
+
+  return state;
 }
 
 function GroupAvatar({ userIds, allUsers }: { userIds: string[], allUsers: User[] }) {
@@ -107,7 +183,7 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
 
-  const { data: messages, isLoading: messagesLoading } = useMessages(chat?.id || null);
+  const { messages, isLoading: messagesLoading } = useMessages(chat?.id || null);
 
   const chatUsersQuery = useMemoFirebase(() => {
     if (!firestore || !chat || !chat.members || chat.members.length === 0) return null;
