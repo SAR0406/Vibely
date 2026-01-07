@@ -80,7 +80,7 @@ service cloud.firestore {
        * @allow (delete) Only the channel's designated owner can delete it.
        */
       allow get, update: if isChannelMember(channelId);
-      allow list: if isSignedIn() && request.query.where.path == 'members' && request.query.where.op == 'array-contains' && request.query.where.value == request.auth.uid;
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid in request.resource.data.members && request.resource.data.ownerId == request.auth.uid;
       allow delete: if isChannelOwner(channelId);
 
