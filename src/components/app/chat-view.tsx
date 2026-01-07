@@ -19,6 +19,7 @@ import { useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Skeleton } from '../ui/skeleton';
 import { ReactionPicker } from './reaction-picker';
+import { UserProfileDialog } from './user-profile-dialog';
 
 type MessagesState = {
   messages: Message[];
@@ -135,7 +136,7 @@ function GroupAvatar({ userIds, allUsers }: { userIds: string[], allUsers: User[
     );
 }
 
-const DMHeaderContent = ({ otherUserId }: { otherUserId: string }) => {
+const DMHeaderContent = ({ otherUserId, onAvatarClick }: { otherUserId: string, onAvatarClick: (user: User) => void }) => {
     const firestore = useFirestore();
     const otherUserRef = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -160,7 +161,9 @@ const DMHeaderContent = ({ otherUserId }: { otherUserId: string }) => {
 
     return (
         <div className='flex items-center gap-3'>
-            <UserAvatar src={otherUser.avatarUrl} name={otherUser.name} isOnline={otherUser.online} />
+            <button onClick={() => onAvatarClick(otherUser)} className='-m-2 p-2 rounded-full'>
+              <UserAvatar src={otherUser.avatarUrl} name={otherUser.name} isOnline={otherUser.online} />
+            </button>
             <div>
                 <h2 className="font-headline text-lg font-semibold">{otherUser.name || 'User'}</h2>
                 <p className="text-sm text-muted-foreground">
@@ -180,6 +183,9 @@ type ChatViewProps = {
 export function ChatView({ chat, currentUser }: ChatViewProps) {
   const [inputValue, setInputValue] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [selectedUserForProfile, setSelectedUserForProfile] = useState<User | null>(null);
+
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
 
@@ -201,6 +207,16 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
     return null;
   }, [isDM, chat, currentUser]);
 
+  const handleShowUserProfile = (user: User) => {
+    setSelectedUserForProfile(user);
+    setIsProfileOpen(true);
+  };
+
+  const handleStartDirectMessage = (otherUser: User) => {
+    // This function is passed to the profile dialog, but should do nothing here
+    // as we are already in a chat view.
+    setIsProfileOpen(false);
+  };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,7 +278,7 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
     if (!chat) return null;
 
     if (isDM && otherUserIdInDM) {
-        return <DMHeaderContent otherUserId={otherUserIdInDM} />
+        return <DMHeaderContent otherUserId={otherUserIdInDM} onAvatarClick={handleShowUserProfile} />
     }
     
     if (!isDM && chatUsers) {
@@ -315,6 +331,7 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
   }
 
   return (
+    <>
     <motion.div
       key={chat.id}
       initial={{ opacity: 0 }}
@@ -402,5 +419,16 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
         onAutomationsUpdate={handleAutomationsUpdate}
       />}
     </motion.div>
+
+    {selectedUserForProfile && currentUser && (
+        <UserProfileDialog
+          isOpen={isProfileOpen}
+          onOpenChange={setIsProfileOpen}
+          user={selectedUserForProfile}
+          currentUser={currentUser}
+          onStartChat={handleStartDirectMessage}
+        />
+    )}
+    </>
   );
 }
