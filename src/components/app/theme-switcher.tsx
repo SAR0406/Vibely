@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Moon, Sun, Palette, Settings2 } from 'lucide-react';
+import { Palette, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -16,33 +16,16 @@ import { themes } from '@/lib/themes';
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { ColorPickerDialog } from './color-picker-dialog';
 
 export function ThemeSwitcher() {
-  const { theme, setTheme, isDarkMode, toggleDarkMode } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
   return (
     <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-muted p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
-            {isDarkMode ? (
-              <Sun className="size-4" />
-            ) : (
-              <Moon className="size-4" />
-            )}
-            <span className="sr-only">Toggle dark mode</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right" className="group-data-[collapsible=icon]:block hidden">
-          Toggle Theme
-        </TooltipContent>
-      </Tooltip>
-
       <DropdownMenu>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -68,7 +51,7 @@ export function ThemeSwitcher() {
                 <div className="flex items-center gap-2">
                   <div
                     className="size-4 rounded-full border"
-                    style={{ backgroundColor: t.colors?.primary || 'hsl(var(--primary))' }}
+                    style={{ backgroundColor: t.darkColors?.primary || 'hsl(var(--primary))' }}
                   ></div>
                   {t.name}
                 </div>
