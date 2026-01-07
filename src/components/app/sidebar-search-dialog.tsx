@@ -38,14 +38,10 @@ export function SidebarSearchDialog({
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !debouncedSearchTerm) return null;
     
-    // This query finds users where the userCode is a prefix match.
-    // It's a common pattern for simple search functionality in Firestore.
     return query(
       collection(firestore, 'userDirectory'),
-      orderBy('userCode'),
-      where('userCode', '>=', debouncedSearchTerm),
-      where('userCode', '<=', debouncedSearchTerm + '\uf8ff'),
-      limit(10) // Limit results to prevent fetching too much data
+      where('searchableTerms', 'array-contains', debouncedSearchTerm.toLowerCase()),
+      limit(10)
     );
   }, [firestore, debouncedSearchTerm]);
 
@@ -71,12 +67,12 @@ export function SidebarSearchDialog({
         <DialogHeader className="p-6 pb-2">
           <DialogTitle className="font-headline">Find People</DialogTitle>
           <DialogDescription>
-            Find and connect with others by searching for their unique user code.
+            Search for people by their name or user code.
           </DialogDescription>
         </DialogHeader>
         <div className="px-6">
           <Input
-            placeholder="Enter user code (e.g. janedoe#1234)"
+            placeholder="e.g. Jane Doe or janedoe#1234"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full"
@@ -91,7 +87,7 @@ export function SidebarSearchDialog({
             )}
             {!isLoading && debouncedSearchTerm && (!searchResults || searchResults.length === 0) && (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                No user found with that code.
+                No users found.
               </p>
             )}
             <div className="space-y-2">

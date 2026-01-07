@@ -15,8 +15,9 @@ import {
 } from '@/components/ui/tooltip';
 import { ReactionPicker } from './reaction-picker';
 import { useFirestore } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { Badge } from '../ui/badge';
+import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type MessageProps = {
   message: Message;
@@ -55,7 +56,7 @@ export function ChatMessage({ message, author, isSender, chatId, currentUser }: 
       newReactions = [...existingReactions, { emoji, userId: currentUser.id, username: currentUser.name }];
     }
     
-    updateDoc(messageRef, { reactions: newReactions });
+    updateDocumentNonBlocking(messageRef, { reactions: newReactions });
   };
 
   const ReadStatusIcon = message.readStatus === 'read' ? CheckCheck : Check;

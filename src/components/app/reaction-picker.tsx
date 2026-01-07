@@ -5,6 +5,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { SmilePlus } from 'lucide-react';
 
 const frequentEmojis = ['❤️', '😂', '👍', '🙏', '😢', '🔥', '🎉'];
 
@@ -17,7 +18,7 @@ export function ReactionPicker({ children, onSelect }: ReactionPickerProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-auto border-none bg-transparent shadow-none">
+      <PopoverContent className="w-auto border-none bg-transparent shadow-none p-0">
         <div className="flex gap-1 rounded-full bg-card p-2 shadow-lg">
           {frequentEmojis.map((emoji) => (
             <button

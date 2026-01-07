@@ -273,7 +273,7 @@ export default function ChatLayout() {
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
+        <div className="flex h-screen w-full bg-background text-foreground">
           <Sidebar
             variant="sidebar"
             collapsible="offcanvas"
@@ -445,7 +445,8 @@ export default function ChatLayout() {
               </div>
             </SidebarFooter>
           </Sidebar>
-          <main className="flex-1 flex flex-col relative h-screen">
+          
+          <main className="flex-1">
             <header className="absolute left-4 top-4 z-20">
               <SidebarTrigger />
             </header>

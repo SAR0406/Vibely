@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Paperclip, Send, Settings } from 'lucide-react';
+import { Paperclip, Send, Settings, SmilePlus } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { collection, query, orderBy, doc, where, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
@@ -306,7 +306,7 @@ export function ChatView({ chat, currentUser }: ChatViewProps) {
                     type="button"
                     className="h-8 w-8 hover:bg-muted/50"
                     >
-                    <p className="text-xl">🙂</p>
+                    <SmilePlus className="size-5 text-muted-foreground" />
                     <span className="sr-only">Add emoji</span>
                     </Button>
                 </ReactionPicker>
