@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 
 type UserProfileDialogProps = {
   user: User | null;
+  currentUser: User | null;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onStartChat: (user: User) => void;
@@ -26,37 +27,33 @@ type UserProfileDialogProps = {
 
 export function UserProfileDialog({
   user,
+  currentUser,
   isOpen,
   onOpenChange,
+  onStartChat,
 }: UserProfileDialogProps) {
-    const { user: authUser } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
 
-    const currentUserDocRef = useMemoFirebase(() => {
-      if (!firestore || !authUser) return null;
-      return doc(firestore, 'users', authUser.uid);
-    }, [firestore, authUser]);
-    const { data: currentUserProfile } = useDoc<User>(currentUserDocRef);
-
-
-  if (!user || !currentUserProfile) {
+  if (!user || !currentUser) {
     return null;
   }
+  
+  const isViewingOwnProfile = user.id === currentUser.id;
 
   const handleSendChatRequest = () => {
-    if (!firestore || !currentUserProfile) return;
+    if (!firestore || !currentUser) return;
 
     // A unique ID for the request based on sender and receiver
-    const requestId = `req_${currentUserProfile.id}_${user.id}`;
+    const requestId = `req_${currentUser.id}_${user.id}`;
     // The request will be stored in the *recipient's* subcollection
     const requestRef = doc(firestore, 'users', user.id, 'chatRequests', requestId);
     
     const requestData: Omit<ChatRequest, 'id'> = {
-        fromUserId: currentUserProfile.id,
-        fromUserCode: currentUserProfile.userCode!,
-        fromFullName: currentUserProfile.fullName!,
-        fromAvatarUrl: currentUserProfile.avatarUrl,
+        fromUserId: currentUser.id,
+        fromUserCode: currentUser.userCode!,
+        fromFullName: currentUser.fullName!,
+        fromAvatarUrl: currentUser.avatarUrl,
         status: 'pending',
         createdAt: serverTimestamp(),
     };
@@ -86,15 +83,15 @@ export function UserProfileDialog({
           </DialogTitle>
           <DialogDescription>{user.userCode}</DialogDescription>
         </DialogHeader>
-        <DialogFooter>
-          <Button onClick={handleSendChatRequest} className="w-full">
-            <MessageSquarePlus className="mr-2 size-4" />
-            Send Chat Request
-          </Button>
-        </DialogFooter>
+        {!isViewingOwnProfile && (
+            <DialogFooter>
+            <Button onClick={handleSendChatRequest} className="w-full">
+                <MessageSquarePlus className="mr-2 size-4" />
+                Send Chat Request
+            </Button>
+            </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
-
-    

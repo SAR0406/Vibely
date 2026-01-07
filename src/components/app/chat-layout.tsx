@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { MessageSquare, Users, LogOut, Search, Bell, UserPlus } from 'lucide-react';
+import { MessageSquare, Users, LogOut, Search, Bell, UserPlus, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { Chat, User as UserType, Message, ChatRequest } from '@/lib/types';
@@ -36,6 +36,7 @@ import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/no
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../ui/dropdown-menu';
 
 const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -320,19 +321,6 @@ export default function ChatLayout() {
                 </SidebarHeader>
                 <SidebarContent className="p-2">
                   <div className="flex flex-col gap-4">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start gap-2"
-                          onClick={() => setIsFindPeopleOpen(true)}
-                        >
-                          <Search className="size-4" />
-                          <span>Find People</span>
-                        </Button>
-                      </TooltipTrigger>
-                    </Tooltip>
-
                     {chatsLoading ? (
                       <div className="space-y-2 p-2">
                         <Skeleton className="h-8 w-full" />
@@ -420,71 +408,58 @@ export default function ChatLayout() {
 
                   <div className="flex flex-col items-center gap-2 group-data-[collapsible=expanded]:items-stretch">
                     <ThemeSwitcher />
-                    <div className="flex items-center gap-3 rounded-lg p-2 transition-colors duration-200 hover:bg-muted">
-                      {currentUser ? (
-                        <>
-                          <UserAvatar
-                            src={currentUser.avatarUrl}
-                            name={currentUser.name}
-                            isOnline={currentUser.online}
-                          />
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold">
-                              {currentUser.name}
-                            </p>
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className={cn(
-                                  'h-2 w-2 rounded-full',
-                                  currentUser.online
-                                    ? 'bg-green-500'
-                                    : 'bg-gray-400'
-                                )}
-                              ></span>
-                              <p className="text-xs text-muted-foreground">
-                                {currentUser.online ? 'Online' : 'Offline'}
-                              </p>
-                            </div>
-                          </div>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="relative"
-                                onClick={() => setIsRequestsOpen(true)}
-                              >
-                                <Bell className="size-4" />
-                                {chatRequests && chatRequests.length > 0 && (
-                                  <Badge
-                                    variant="destructive"
-                                    className="absolute -top-1 -right-1 h-4 w-4 justify-center rounded-full p-0 text-xs"
-                                  >
-                                    {chatRequests.length}
-                                  </Badge>
-                                )}
-                              </Button>
-                            </TooltipTrigger>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleLogout}
-                              >
-                                <LogOut className="size-4" />
-                              </Button>
-                            </TooltipTrigger>
-                          </Tooltip>
-                        </>
+                     {currentUser ? (
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="flex h-auto w-full justify-start gap-3 rounded-lg p-2 transition-colors duration-200 hover:bg-muted">
+                                    <UserAvatar
+                                        src={currentUser.avatarUrl}
+                                        name={currentUser.name}
+                                        isOnline={currentUser.online}
+                                    />
+                                    <div className="flex-1 text-left">
+                                        <p className="text-sm font-semibold">
+                                        {currentUser.name}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {currentUser.userCode}
+                                        </p>
+                                    </div>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent side="top" align="start" className="w-56">
+                                <DropdownMenuItem onClick={() => setIsRequestsOpen(true)}>
+                                    <Bell className="mr-2 size-4" />
+                                    <span>Chat Requests</span>
+                                     {chatRequests && chatRequests.length > 0 && (
+                                        <Badge
+                                            variant="destructive"
+                                            className="ml-auto h-5 w-5 justify-center rounded-full p-0 text-xs"
+                                        >
+                                            {chatRequests.length}
+                                        </Badge>
+                                    )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => currentUser && handleShowUserProfile(currentUser)}>
+                                    <UserPlus className="mr-2 size-4" />
+                                    <span>Profile</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={handleLogout}>
+                                    <LogOut className="mr-2 size-4" />
+                                    <span>Log out</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                       ) : (
-                        <div className="flex w-full items-center gap-2">
-                          <Skeleton className="size-8 rounded-full" />
-                          <Skeleton className="h-4 w-24" />
+                        <div className="flex w-full items-center gap-2 rounded-lg p-2">
+                          <Skeleton className="size-10 rounded-full" />
+                          <div className="flex-1 space-y-1">
+                            <Skeleton className="h-4 w-24" />
+                             <Skeleton className="h-3 w-16" />
+                          </div>
                         </div>
                       )}
-                    </div>
                   </div>
                 </SidebarFooter>
               </Sidebar>
@@ -523,6 +498,7 @@ export default function ChatLayout() {
                 onOpenChange={setIsProfileOpen}
                 user={selectedUserForProfile}
                 onStartChat={handleStartDirectMessage}
+                currentUser={currentUser}
               />
             )}
           </SidebarProvider>
@@ -531,5 +507,3 @@ export default function ChatLayout() {
     </div>
   );
 }
-
-    

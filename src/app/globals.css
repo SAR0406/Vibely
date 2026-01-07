@@ -198,24 +198,24 @@
 
   /* Paper Theme (Light) */
   .light.paper {
-    --background: 48 33% 94%;
+    --background: 0 0% 100%;
     --foreground: 20 14% 4%;
-    --card: 48 33% 98%;
+    --card: 0 0% 100%;
     --card-foreground: 20 14% 4%;
-    --popover: 48 33% 98%;
+    --popover: 0 0% 100%;
     --popover-foreground: 20 14% 4%;
     --primary: 340 72% 51%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 30 5% 90%;
-    --secondary-foreground: 24 10% 10%;
-    --muted: 30 5% 90%;
-    --muted-foreground: 25 5% 45%;
-    --accent: 30 5% 85%;
-    --accent-foreground: 24 10% 10%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 30 5% 85%;
-    --input: 30 5% 85%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
     --ring: 340 72% 51%;
   }
 
