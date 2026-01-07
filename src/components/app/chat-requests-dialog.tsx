@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from './user-avatar';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, doc, query, where, writeBatch } from 'firebase/firestore';
 import type { ChatRequest, User } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
@@ -32,10 +32,13 @@ export function ChatRequestsDialog({
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const requestsQuery = query(
-    collection(firestore, `users/${user?.uid}/chatRequests`),
-    where('status', '==', 'pending')
-  );
+  const requestsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+        collection(firestore, `users/${user.uid}/chatRequests`),
+        where('status', '==', 'pending')
+    );
+  }, [firestore, user]);
   
   const { data: requests, isLoading } = useCollection<ChatRequest>(requestsQuery);
 
