@@ -16,8 +16,9 @@ import { ChatMessage } from './message';
 import { AutomationSettingsDialog } from './automation-settings-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import Image from 'next/image';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Skeleton } from '../ui/skeleton';
 
 
 function useMessages(channelId: string | null) {
@@ -34,29 +35,11 @@ function useMessages(channelId: string | null) {
   return useCollection<Message>(messagesQuery);
 }
 
-function AvatarGroup({ userIds, allUsers, currentUser }: { userIds: string[], allUsers: User[], currentUser: User | null }) {
-    const otherUserIds = userIds.filter(id => id !== currentUser?.id);
-    const displayedUsers = otherUserIds
+function GroupAvatar({ userIds, allUsers }: { userIds: string[], allUsers: User[] }) {
+    const displayedUsers = userIds
       .map((id) => allUsers.find((u) => u.id === id))
       .filter(Boolean) as User[];
   
-    if (userIds.length <= 2) {
-        const otherUser = displayedUsers[0];
-        const lastSeenDate = otherUser?.lastSeen?.toDate ? otherUser.lastSeen.toDate() : null;
-
-        return (
-            <div className='flex items-center gap-3'>
-                {otherUser ? <UserAvatar src={otherUser.avatarUrl} name={otherUser.name} isOnline={otherUser.online} /> : <div className='size-8'/>}
-                <div>
-                    <h2 className="font-headline text-lg font-semibold">{otherUser?.name || 'User'}</h2>
-                    <p className="text-sm text-muted-foreground">
-                        {otherUser?.online ? 'Online' : (lastSeenDate ? `Last seen ${formatDistanceToNow(lastSeenDate, { addSuffix: true })}` : 'Offline')}
-                    </p>
-                </div>
-            </div>
-        )
-    }
-
     return (
       <div className="flex -space-x-2 overflow-hidden">
         {displayedUsers.slice(0, 3).map((user) => (
@@ -74,7 +57,44 @@ function AvatarGroup({ userIds, allUsers, currentUser }: { userIds: string[], al
         )}
       </div>
     );
-  }
+}
+
+const DMHeaderContent = ({ otherUserId }: { otherUserId: string }) => {
+    const firestore = useFirestore();
+    const otherUserRef = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return doc(firestore, 'users', otherUserId);
+    }, [firestore, otherUserId]);
+
+    const { data: otherUser, isLoading } = useDoc<User>(otherUserRef);
+
+    if (isLoading || !otherUser) {
+        return (
+             <div className='flex items-center gap-3'>
+                <Skeleton className='size-9 rounded-full'/>
+                <div className='space-y-1'>
+                    <Skeleton className='h-4 w-24' />
+                    <Skeleton className='h-3 w-16' />
+                </div>
+            </div>
+        )
+    }
+
+    const lastSeenDate = otherUser.lastSeen?.toDate ? otherUser.lastSeen.toDate() : null;
+
+    return (
+        <div className='flex items-center gap-3'>
+            <UserAvatar src={otherUser.avatarUrl} name={otherUser.name} isOnline={otherUser.online} />
+            <div>
+                <h2 className="font-headline text-lg font-semibold">{otherUser.name || 'User'}</h2>
+                <p className="text-sm text-muted-foreground">
+                    {otherUser.online ? 'Online' : (lastSeenDate ? `Last seen ${formatDistanceToNow(lastSeenDate, { addSuffix: true })}` : 'Offline')}
+                </p>
+            </div>
+        </div>
+    )
+};
+
 
 type ChatViewProps = {
   channel: Channel | null;
@@ -110,7 +130,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
             const msgRef = doc(firestore, 'channels', channel.id, 'messages', msg.id);
             batch.update(msgRef, { readStatus: 'read' });
         });
-        await batch.commit().catch(console.error); // Add error handling
+        await batch.commit().catch(console.error);
     }
   };
 
@@ -176,19 +196,37 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
   }
 
   const isDM = channel.members.length === 2 && channel.isDM;
-  const headerContent = isDM ? (
-    channelUsers && <AvatarGroup userIds={channel.members} allUsers={channelUsers} currentUser={currentUser} />
-  ) : (
-    <>
-        {channelUsers && <AvatarGroup userIds={channel.members} allUsers={channelUsers} currentUser={currentUser} />}
-        <div>
-            <h2 className="font-headline text-lg font-semibold">{channel.name}</h2>
-            <p className="text-sm text-muted-foreground">
-            {channel.description}
-            </p>
+  const otherUserIdInDM = isDM ? channel.members.find(id => id !== currentUser?.id) : null;
+
+  const headerContent = useMemo(() => {
+    if (isDM && otherUserIdInDM) {
+        return <DMHeaderContent otherUserId={otherUserIdInDM} />
+    }
+    
+    if (!isDM && channelUsers) {
+        return (
+            <>
+                <GroupAvatar userIds={channel.members} allUsers={channelUsers} />
+                <div>
+                    <h2 className="font-headline text-lg font-semibold">{channel.name}</h2>
+                    <p className="text-sm text-muted-foreground">
+                    {channel.description}
+                    </p>
+                </div>
+            </>
+        )
+    }
+
+    return (
+        <div className='flex items-center gap-3'>
+            <Skeleton className='size-9 rounded-full'/>
+            <div className='space-y-1'>
+                <Skeleton className='h-4 w-32' />
+                <Skeleton className='h-3 w-48' />
+            </div>
         </div>
-    </>
-  );
+    );
+  }, [isDM, otherUserIdInDM, channel, channelUsers, currentUser]);
 
   return (
     <motion.div
@@ -215,7 +253,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
           <div className="space-y-6 p-4 md:p-8">
             {messages && channelUsers && messages.map((message) => {
               const author = channelUsers.find((u) => u.id === message.authorId);
-              if (!author) return null; // Or a placeholder
+              if (!author) return null;
               return (
                 <ChatMessage
                   key={message.id}

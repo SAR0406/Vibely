@@ -13,10 +13,10 @@ import {
   SidebarMenuButton,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { MessageSquare, PlusCircle, Users, LogOut, Search, User } from 'lucide-react';
+import { MessageSquare, PlusCircle, Users, LogOut, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import type { Channel, User as UserType } from '@/lib/types';
+import type { Channel, User as UserType, Message } from '@/lib/types';
 import { ChatView } from './chat-view';
 import { UserAvatar } from './user-avatar';
 import { CreateChannelDialog } from './create-channel-dialog';
@@ -33,6 +33,7 @@ import { useAuth, useUser, useDoc, useFirestore, useCollection, useMemoFirebase 
 import { doc, collection, query, where, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Skeleton } from '../ui/skeleton';
+import { cn } from '@/lib/utils';
 
 const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -65,6 +66,59 @@ function useChannels() {
   return useCollection<Channel>(channelsQuery);
 }
 
+const DMMenuItem = ({ channel, isActive, onSelect }: { channel: Channel, isActive: boolean, onSelect: (id: string) => void }) => {
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const otherUserId = useMemo(() => channel.members.find(m => m !== user?.uid), [channel.members, user]);
+
+    const otherUserDocRef = useMemoFirebase(() => {
+        if (!firestore || !otherUserId) return null;
+        return doc(firestore, 'users', otherUserId);
+    }, [firestore, otherUserId]);
+
+    const { data: otherUser } = useDoc<UserType>(otherUserDocRef);
+
+    const messagesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'channels', channel.id, 'messages'));
+    }, [firestore, channel.id]);
+
+    const { data: messages } = useCollection<Message>(messagesQuery);
+    
+    const hasUnread = useMemo(() => {
+      if (!messages || !user) return false;
+      return messages.some(msg => msg.readStatus !== 'read' && msg.authorId !== user.uid);
+    }, [messages, user]);
+
+
+    if (!otherUser) {
+        return (
+             <div className="flex h-10 items-center gap-2 rounded-md p-2">
+                <Skeleton className="size-6 rounded-full" />
+                <Skeleton className="h-4 w-20" />
+            </div>
+        )
+    }
+
+    return (
+        <SidebarMenuItem>
+            <SidebarMenuButton
+                onClick={() => onSelect(channel.id)}
+                isActive={isActive}
+                tooltip={otherUser.fullName}
+            >
+                <div className='relative'>
+                    <UserAvatar src={otherUser.avatarUrl} name={otherUser.fullName || ''} isOnline={otherUser.online}/>
+                    {hasUnread && <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-primary ring-2 ring-background" />}
+                </div>
+                <span>{otherUser.fullName}</span>
+            </SidebarMenuButton>
+        </SidebarMenuItem>
+    )
+}
+
+
 export default function ChatLayout() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -90,11 +144,9 @@ export default function ChatLayout() {
     if (user && firestore) {
       const userStatusRef = doc(firestore, 'users', user.uid);
       
-      // Set user to online when the component mounts (app is active)
       updateDocumentNonBlocking(userStatusRef, { online: true });
 
       const handleBeforeUnload = () => {
-        // This is a failsafe for when the user closes the tab/browser
         updateDoc(userStatusRef, {
           online: false,
           lastSeen: serverTimestamp(),
@@ -105,7 +157,6 @@ export default function ChatLayout() {
 
       return () => {
         window.removeEventListener('beforeunload', handleBeforeUnload);
-        // Set user to offline when the component unmounts (e.g., logout)
         updateDocumentNonBlocking(userStatusRef, {
           online: false,
           lastSeen: serverTimestamp(),
@@ -120,7 +171,7 @@ export default function ChatLayout() {
       id: user.uid,
       name: currentUserProfile.fullName || 'User',
       avatarUrl: currentUserProfile.avatarUrl || '',
-      online: currentUserProfile.online || false, // Use live status
+      online: currentUserProfile.online || false, 
       ...currentUserProfile,
     };
   }, [user, currentUserProfile]);
@@ -165,12 +216,12 @@ export default function ChatLayout() {
       const channelRef = doc(firestore, 'channels', channelId);
       const newChannel: Channel = {
         id: channelId,
-        name: otherUser.fullName || otherUser.username || 'Direct Message',
+        name: otherUser.fullName || otherUser.username || 'Direct Message', // This name is now a fallback
         description: `Direct message with ${otherUser.fullName}`,
         members: [currentUser.id, otherUser.id],
         isDM: true,
         isPublic: false,
-        ownerId: currentUser.id, // Or handle ownership differently for DMs
+        ownerId: currentUser.id,
         automations: [],
       };
   
@@ -183,7 +234,6 @@ export default function ChatLayout() {
   const handleLogout = async () => {
     if (user) {
         const userStatusRef = doc(firestore, 'users', user.uid);
-        // Explicitly set offline status before signing out
         await updateDoc(userStatusRef, {
             online: false,
             lastSeen: serverTimestamp(),
@@ -294,16 +344,12 @@ export default function ChatLayout() {
                                 </p>
                                 <SidebarMenu>
                                 {directMessages.map((channel) => (
-                                    <SidebarMenuItem key={channel.id}>
-                                        <SidebarMenuButton
-                                        onClick={() => handleSelectChannel(channel.id)}
+                                    <DMMenuItem 
+                                        key={channel.id}
+                                        channel={channel}
                                         isActive={selectedChannelId === channel.id}
-                                        tooltip={channel.name}
-                                        >
-                                        <User />
-                                        <span>{channel.name}</span>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
+                                        onSelect={handleSelectChannel}
+                                    />
                                 ))}
                                 </SidebarMenu>
                             </div>
@@ -349,7 +395,10 @@ export default function ChatLayout() {
                         <p className="text-sm font-semibold">
                           {currentUser.name}
                         </p>
-                        <p className="text-xs text-muted-foreground">{currentUser.online ? 'Online' : 'Offline'}</p>
+                         <div className="flex items-center gap-1.5">
+                            <span className={cn("h-2 w-2 rounded-full", currentUser.online ? 'bg-green-500' : 'bg-gray-400')}></span>
+                            <p className="text-xs text-muted-foreground">{currentUser.online ? 'Online' : 'Offline'}</p>
+                        </div>
                       </div>
                       <Tooltip>
                         <TooltipTrigger asChild>
