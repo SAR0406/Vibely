@@ -23,7 +23,8 @@ export const channels: Channel[] = [
     name: 'Product Team',
     description: 'Discussions about our next big feature.',
     members: ['user-1', 'user-2', 'user-5'],
-    type: 'private',
+    isPublic: true,
+    isDM: false,
     ownerId: 'user-5',
     automations: [
       { id: 'auto-1', name: 'Welcome Message', description: 'Sends a welcome message to new members.', enabled: true, content: 'Welcome to the Product Team channel, {{user}}!' },
@@ -35,7 +36,8 @@ export const channels: Channel[] = [
     name: 'Random',
     description: 'A place for fun and random thoughts.',
     members: ['user-1', 'user-2', 'user-3', 'user-4', 'user-5', 'user-6', 'user-7'],
-    type: 'public',
+    isPublic: true,
+    isDM: false,
     ownerId: 'user-1',
     automations: [
        { id: 'auto-3', name: 'Ice Breaker', description: 'Prompts users with an ice breaker question.', enabled: true, content: "What's the most interesting thing you've read this week?" },
@@ -49,7 +51,7 @@ export const messages: Message[] = [
     channelId: 'channel-1',
     authorId: 'user-1',
     content: 'Hey everyone, let\'s brainstorm ideas for the Q3 roadmap. 🧠',
-    timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    timestamp: new Date(Date.now() - 1000 * 60 * 10),
     readStatus: 'read',
   },
   {
@@ -57,7 +59,7 @@ export const messages: Message[] = [
     channelId: 'channel-1',
     authorId: 'user-2',
     content: 'Great idea! I was thinking we could focus on improving user onboarding. What do you think?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
+    timestamp: new Date(Date.now() - 1000 * 60 * 8),
     readStatus: 'read',
   },
   {
@@ -65,7 +67,7 @@ export const messages: Message[] = [
     channelId: 'channel-1',
     authorId: 'user-5',
     content: 'Onboarding is a solid plan. I can put together some mockups for a new flow. I\'ll have them ready by EOD.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    timestamp: new Date(Date.now() - 1000 * 60 * 5),
     readStatus: 'delivered',
   },
 ];

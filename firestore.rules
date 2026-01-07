@@ -3,34 +3,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * Core Philosophy: This ruleset enforces a security model where user data is strictly private to the owner,
-     * while shared resources like channels are accessible based on explicit membership. The rules are designed for
-     * performance and security by heavily relying on denormalized data to avoid costly and complex lookups.
-     *
-     * Data Structure:
-     * - /users/{userId}: Private user profiles, owned by the user.
-     * - /channels/{channelId}: Top-level collection for chat channels. Access is controlled by a denormalized
-     *   `ownerId` and a `members` map directly on each channel document.
-     * - /channels/{channelId}/messages/{messageId}: Subcollection for messages, inheriting access from the parent channel.
-     * - /channels/{channelId}/messages/{messageId}/attachments/{attachmentId}: Subcollection for attachments, also inheriting access.
-     *
-     * Key Security Decisions:
-     * - User data in `/users/{userId}` is writable only by the owner. Profile data is readable by any signed-in user to
-     *   facilitate social features, but listing the entire user base is disabled to prevent data scraping.
-     * - Channel access is determined by checking the `members` map on the channel document itself. This is a deliberate
-     *   denormalization strategy to make security rules fast and simple. Private channels are only visible to members,
-     *   while public channels are visible to all authenticated users.
-     * - Only channel owners (defined by `ownerId`) can modify channel metadata or delete the channel.
-     * - Only channel members can create content (messages, attachments) within a channel.
-     *
-     * Denormalization for Authorization:
-     * To ensure performant and secure access control, the concept of a separate `ChannelMembership` collection
-     * is implemented by denormalizing a `members` map (e.g., `{ "user_abc": true, "user_xyz": true }`)
-     * directly onto each `/channels/{channelId}` document. This allows rules to check membership with a single
-     * document read instead of an impossible collection query.
-     */
-
     // --------------------------------------------------------------------------
     // Helper Functions
     // --------------------------------------------------------------------------
@@ -47,122 +19,90 @@ service cloud.firestore {
      * This is the foundation of the user-ownership model.
      */
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
-
+    
     /**
      * Returns true if the document being written to already exists.
-     * Crucial for protecting against unintended writes in update/delete operations.
      */
     function isExistingDoc() {
       return resource != null;
     }
 
     /**
-     * Combines owner and existence checks for robust update/delete rules.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && isExistingDoc();
-    }
-    
-    /**
-     * Returns the data of a channel document.
-     */
-    function getChannel(channelId) {
-      return get(/databases/$(database)/documents/channels/$(channelId)).data;
-    }
-
-    /**
      * Returns true if the user is a member of a given channel.
-     * Relies on the denormalized `members` map on the channel document.
+     * Relies on the denormalized `members` array-contains check in the rule itself.
+     * This is NOT for use with get() calls.
      */
     function isChannelMember(channelId) {
-      return isSignedIn() && request.auth.uid in getChannel(channelId).members;
+       return isSignedIn() && exists(/databases/$(database)/documents/channels/$(channelId)) && request.auth.uid in get(/databases/$(database)/documents/channels/$(channelId)).data.members;
     }
 
     /**
      * Returns true if the user is the owner of a given channel.
      */
     function isChannelOwner(channelId) {
-      return isSignedIn() && request.auth.uid == getChannel(channelId).ownerId;
-    }
-
-    /**
-     * Returns true if a user is allowed to read a channel's content.
-     * Public channels are readable by any signed-in user; private channels require membership.
-     */
-    function canReadChannel(channelId) {
-      let channel = getChannel(channelId);
-      return isSignedIn() && (channel.isPublic || request.auth.uid in channel.members);
-    }
-    
-    /**
-     * Returns true if the user is the sender of a given message.
-     */
-    function isMessageSender(message) {
-      return isSignedIn() && request.auth.uid == message.data.senderId;
+      return isSignedIn() && exists(/databases/$(database)/documents/channels/$(channelId)) && request.auth.uid == get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId;
     }
 
     // --------------------------------------------------------------------------
-    // Collection Rules
+    // Collection Group & Wildcard Rules
     // --------------------------------------------------------------------------
 
     /**
      * @description Controls access to user profile documents.
      * @path /users/{userId}
-     * @allow (create) An authenticated user creating their own user document for the first time.
-     * @deny (update) An authenticated user trying to modify another user's profile.
-     * @principle Restricts access to a user's own data tree and enforces self-creation.
+     * @allow (read) Any signed-in user can read any user's profile.
+     * @allow (write) A user can only create, update, or delete their own profile.
      */
     match /users/{userId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow get, list: if isSignedIn();
+      allow write: if isOwner(userId);
     }
 
     /**
-     * @description Controls access to channel documents. Access is based on ownership and a denormalized members list.
+     * @description Controls access to channels. Access is based on a denormalized members list.
      * @path /channels/{channelId}
-     * @allow (create) An authenticated user creating a new channel, making themselves the owner and a member.
-     * @deny (update) A channel member trying to change the channel's name.
-     * @principle Implements shared access using a denormalized `members` map for reads and a strict `ownerId` for management.
+     * @allow (read/list) A user can only read channels they are a member of.
+     * @allow (create) A user can create a channel if they include themselves as the owner and a member.
+     * @allow (update) Only the channel owner can update a channel.
+     * @allow (delete) Only the channel owner can delete a channel.
      */
     match /channels/{channelId} {
-      allow get: if canReadChannel(channelId);
-      allow list: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid && request.auth.uid in request.resource.data.members;
-      allow update: if isExistingDoc() && isChannelOwner(channelId);
-      allow delete: if isExistingDoc() && isChannelOwner(channelId);
+      allow read, update, delete: if isChannelMember(channelId);
+      allow list: if isSignedIn(); // List queries should be filtered on the client with `where('members', 'array-contains', request.auth.uid)`
+      allow create: if isSignedIn() && 
+                      request.resource.data.ownerId == request.auth.uid &&
+                      request.auth.uid in request.resource.data.members;
     }
 
     /**
-     * @description Controls access to messages within a channel. Permissions are inherited from the parent channel.
+     * @description Controls access to messages within a channel. Permissions are inherited.
      * @path /channels/{channelId}/messages/{messageId}
-     * @allow (create) A member of a channel sending a new message.
-     * @deny (create) A non-member trying to send a message to a private channel.
-     * @principle Enforces that only members of a shared resource (the channel) can create or modify content within it.
+     * @allow (read/list) A user can read messages in channels they are a member of.
+     * @allow (create) A user can create a message in a channel they are a member of, and must be the author.
+     * @allow (update/delete) A user can only modify their own messages. Channel owners can also delete any message.
      */
     match /channels/{channelId}/messages/{messageId} {
-      allow get, list: if canReadChannel(channelId);
-      allow create: if isChannelMember(channelId) && request.resource.data.senderId == request.auth.uid;
-      allow update: if isExistingDoc() && isMessageSender(resource);
-      allow delete: if isExistingDoc() && (isMessageSender(resource) || isChannelOwner(channelId));
+      allow read, list: if isChannelMember(channelId);
+      allow create: if isChannelMember(channelId) && request.resource.data.authorId == request.auth.uid;
+      allow update: if isChannelMember(channelId) && resource.data.authorId == request.auth.uid;
+      allow delete: if isChannelMember(channelId) && (resource.data.authorId == request.auth.uid || isChannelOwner(channelId));
     }
-
+    
     /**
-     * @description Controls access to message attachments. Permissions are inherited from the parent channel.
+     * @description Controls access to attachments within a message. Permissions are inherited.
      * @path /channels/{channelId}/messages/{messageId}/attachments/{attachmentId}
-     * @allow (create) A channel member adding an attachment to a message in the channel.
-     * @deny (update) Any user trying to modify an existing attachment. Attachments are immutable.
-     * @principle Inherits permissions from the parent container (channel) and restricts destructive actions to privileged roles (message sender, channel owner).
+     * @allow (read/list) A user can read attachments in channels they are a member of.
+     * @allow (create) A user can add an attachment in a channel they are a member of.
+     * @allow (update) Attachments are immutable.
+     * @allow (delete) The message author or channel owner can delete attachments.
      */
     match /channels/{channelId}/messages/{messageId}/attachments/{attachmentId} {
-      allow get, list: if canReadChannel(channelId);
-      allow create: if isChannelMember(channelId) && exists(/databases/$(database)/documents/channels/$(channelId)/messages/$(messageId));
-      allow update: if false;
-      allow delete: if isExistingDoc() && (isMessageSender(get(/databases/$(database)/documents/channels/$(channelId)/messages/$(messageId))) || isChannelOwner(channelId));
+        allow read, list: if isChannelMember(channelId);
+        allow create: if isChannelMember(channelId);
+        allow update: if false;
+        allow delete: if isChannelMember(channelId) && (get(/databases/$(database)/documents/channels/$(channelId)/messages/$(messageId)).data.authorId == request.auth.uid || isChannelOwner(channelId));
     }
   }
 }

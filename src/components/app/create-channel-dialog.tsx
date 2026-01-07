@@ -37,7 +37,7 @@ import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 
 const formSchema = z.object({
-  name: z.string().min(3, 'Channel name must be at least 3 characters.'),
+  name: z.string().optional(),
   members: z.array(z.string()).min(1, 'Select at least one member.'),
 });
 
@@ -66,6 +66,7 @@ export function CreateChannelDialog({
 
   const allUsersQuery = useMemoFirebase(() => {
     if (!firestore || !isOpen) return null;
+    // This query is now allowed by the updated security rules
     return query(collection(firestore, 'users'));
   }, [firestore, isOpen]);
 
@@ -100,7 +101,7 @@ export function CreateChannelDialog({
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (channelName.length < 3 || !allUsers || allUsers.length === 0) {
+      if (!channelName || channelName.length < 3 || !allUsers || allUsers.length === 0 || selectedMembers.length <= 2) {
         setSuggestions(null);
         return;
       }
@@ -142,9 +143,17 @@ export function CreateChannelDialog({
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     if(!user) return;
     const isDM = values.members.length === 2;
+
+    if (!isDM && (!values.name || values.name.length < 3)) {
+        form.setError("name", { type: "manual", message: "Channel name must be at least 3 characters for group chats." });
+        return;
+    }
+
+    const otherUserForDM = isDM ? otherUsers.find(u => u.id === values.members.find(id => id !== user.uid)) : null;
+
     const newChannel: Omit<Channel, 'id'> = {
-        name: isDM ? (otherUsers.find(u => u.id === values.members.find(id => id !== user.uid))?.fullName || 'Direct Message') : values.name,
-        description: suggestions?.descriptionSuggestion || `A channel for ${values.name}`,
+        name: isDM ? (otherUserForDM?.fullName || 'Direct Message') : values.name!,
+        description: isDM ? `Direct message with ${otherUserForDM?.fullName || 'user'}` : (suggestions?.descriptionSuggestion || `A channel for ${values.name}`),
         members: values.members,
         isPublic: !isDM,
         isDM: isDM,
@@ -152,7 +161,7 @@ export function CreateChannelDialog({
         automations: allAutomationSuggestions
             .filter(auto => enabledAutomations[auto.name])
             .map(auto => ({
-                id: `auto-${Date.now()}-${auto.name}`,
+                id: `auto-${Date.now()}-${auto.name.replace(/\s/g, '')}`,
                 name: auto.name,
                 description: auto.description,
                 enabled: true,
@@ -169,7 +178,7 @@ export function CreateChannelDialog({
         <DialogHeader>
           <DialogTitle className="font-headline">Create a New Channel or DM</DialogTitle>
           <DialogDescription>
-            Select one person for a direct message, or multiple for a private group. You can also create a public channel.
+            Select one person for a direct message, or multiple for a group. Public channels require a name.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -180,7 +189,7 @@ export function CreateChannelDialog({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Channel Name (optional for DMs)</FormLabel>
+                    <FormLabel>Channel Name (for groups)</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g. Q4-Launch-Plan" {...field} />
                     </FormControl>
@@ -200,10 +209,10 @@ export function CreateChannelDialog({
                         </div>
                     ) : (
                         <>
-                        {user && (
+                        {user && allUsers?.find(u => u.id === user.uid) && (
                         <Badge variant={'default'} className="cursor-not-allowed">
                             <UserAvatar src={user.photoURL || undefined} name={user.displayName || 'You'} className="size-4 mr-2" />
-                            {user.displayName || 'You'}
+                            You
                         </Badge>
                         )}
                         {otherUsers.map(u => (
@@ -228,7 +237,7 @@ export function CreateChannelDialog({
                     {isLoadingSuggestions && <Loader2 className="size-4 animate-spin"/>}
                 </div>
 
-                {suggestions ? (
+                {suggestions && selectedMembers.length > 2 ? (
                     <div className="space-y-4">
                         <div>
                             <Label>Suggested Description</Label>
@@ -252,7 +261,7 @@ export function CreateChannelDialog({
                     </div>
                 ) : (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                        {channelName.length < 3 ? 'Enter a channel name to get AI suggestions.' : (isLoadingUsers ? 'Loading users...' : 'Type a name to get suggestions.')}
+                        {selectedMembers.length <= 2 ? 'AI suggestions available for groups of 3 or more.' : 'Enter a channel name to get AI suggestions.'}
                     </p>
                 )}
             </div>

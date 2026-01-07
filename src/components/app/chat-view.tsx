@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Paperclip, Send, Settings, Smile } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { collection, query, orderBy, doc, where, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, doc, where, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { formatDistanceToNow } from 'date-fns';
 
 import { cn } from '@/lib/utils';
 import type { Channel, Message, User } from '@/lib/types';
@@ -15,8 +16,8 @@ import { ChatMessage } from './message';
 import { AutomationSettingsDialog } from './automation-settings-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import Image from 'next/image';
-import { useCollection, useDoc, useFirestore, addDocumentNonBlocking, updateDocumentNonBlocking, useMemoFirebase, useUser } from '@/firebase';
-import { formatDistanceToNow } from 'date-fns';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 function useMessages(channelId: string | null) {
@@ -41,13 +42,15 @@ function AvatarGroup({ userIds, allUsers, currentUser }: { userIds: string[], al
   
     if (userIds.length <= 2) {
         const otherUser = displayedUsers[0];
+        const lastSeenDate = otherUser?.lastSeen?.toDate ? otherUser.lastSeen.toDate() : null;
+
         return (
             <div className='flex items-center gap-3'>
                 {otherUser ? <UserAvatar src={otherUser.avatarUrl} name={otherUser.name} isOnline={otherUser.online} /> : <div className='size-8'/>}
                 <div>
                     <h2 className="font-headline text-lg font-semibold">{otherUser?.name || 'User'}</h2>
                     <p className="text-sm text-muted-foreground">
-                        {otherUser?.online ? 'Online' : (otherUser?.lastSeen ? `Last seen ${formatDistanceToNow(new Date(otherUser.lastSeen.toDate()), { addSuffix: true })}` : 'Offline')}
+                        {otherUser?.online ? 'Online' : (lastSeenDate ? `Last seen ${formatDistanceToNow(lastSeenDate, { addSuffix: true })}` : 'Offline')}
                     </p>
                 </div>
             </div>
@@ -94,7 +97,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
   const { data: channelUsers } = useCollection<User>(channelUsersQuery);
 
   const markMessagesAsRead = async () => {
-    if (!channel || !currentUser || messagesLoading || !messages) return;
+    if (!channel || !currentUser || messagesLoading || !messages || !firestore) return;
 
     const batch = writeBatch(firestore);
     const unreadMessages = messages.filter(
@@ -103,15 +106,18 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
 
     if (unreadMessages.length > 0) {
         unreadMessages.forEach((msg) => {
+            if (!msg.id) return;
             const msgRef = doc(firestore, 'channels', channel.id, 'messages', msg.id);
             batch.update(msgRef, { readStatus: 'read' });
         });
-        await batch.commit();
+        await batch.commit().catch(console.error); // Add error handling
     }
   };
 
   useEffect(() => {
-    markMessagesAsRead();
+    if (channel?.id && currentUser?.id) {
+        markMessagesAsRead();
+    }
   }, [channel?.id, messages, currentUser?.id]);
   
   useEffect(() => {
@@ -127,12 +133,12 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim() && channel && currentUser) {
+    if (inputValue.trim() && channel && currentUser && firestore) {
       const messagesColRef = collection(firestore, 'channels', channel.id, 'messages');
       addDocumentNonBlocking(messagesColRef, {
         authorId: currentUser.id,
         content: inputValue.trim(),
-        timestamp: new Date(),
+        timestamp: serverTimestamp(),
         readStatus: null,
       });
       setInputValue('');
@@ -140,6 +146,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
   };
 
   const handleAutomationsUpdate = (channelId: string, updatedAutomations: any) => {
+    if (!firestore) return;
     const channelRef = doc(firestore, 'channels', channelId);
     updateDocumentNonBlocking(channelRef, { automations: updatedAutomations });
   };

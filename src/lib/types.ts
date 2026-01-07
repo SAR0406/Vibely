@@ -9,7 +9,7 @@ export type User = {
   fullName?: string;
   username?: string;
   email?: string;
-  lastSeen?: Timestamp;
+  lastSeen?: any; // Can be a server timestamp or a Date object
 };
 
 export type Message = {
@@ -17,7 +17,7 @@ export type Message = {
   channelId?: string; // Made optional as it's part of the subcollection path
   authorId: string;
   content: string;
-  timestamp: string; // Should be ISO string
+  timestamp: any; // Can be a server timestamp or a Date object
   readStatus: 'read' | null;
 };
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check, CheckCheck } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { Message, User } from '@/lib/types';
 import { UserAvatar } from './user-avatar';
@@ -26,7 +26,8 @@ export function ChatMessage({ message, author, isSender }: MessageProps) {
   
   useEffect(() => {
     if (message.timestamp) {
-      const date = new Date(message.timestamp);
+      // The timestamp can be a Firebase Timestamp object or a JS Date object.
+      const date = message.timestamp.toDate ? message.timestamp.toDate() : new Date(message.timestamp);
       setFormattedTimestamp(format(date, 'p'));
       setFullTimestamp(format(date, 'PPpp'));
     }
