@@ -15,12 +15,12 @@ import { ChatMessage } from './message';
 import { AutomationSettingsDialog } from './automation-settings-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import Image from 'next/image';
-import { useCollection, useDoc, useFirestore, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { useCollection, useDoc, useFirestore, addDocumentNonBlocking, updateDocumentNonBlocking, useMemoFirebase } from '@/firebase';
 
 function useMessages(channelId: string | null) {
   const firestore = useFirestore();
 
-  const messagesQuery = useMemo(() => {
+  const messagesQuery = useMemoFirebase(() => {
     if (!firestore || !channelId) return null;
     return query(
       collection(firestore, 'channels', channelId, 'messages'),
@@ -104,9 +104,12 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
 
   const { data: messages } = useMessages(channel?.id || null);
 
-  const { data: allUsers, isLoading: usersLoading } = useCollection<User>(
-    useMemo(() => collection(firestore, 'users'), [firestore])
-  );
+  const allUsersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'users');
+  }, [firestore]);
+
+  const { data: allUsers, isLoading: usersLoading } = useCollection<User>(allUsersQuery);
   
   useEffect(() => {
     if (scrollViewportRef.current) {

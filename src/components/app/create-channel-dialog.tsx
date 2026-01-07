@@ -32,7 +32,7 @@ import {
 } from '@/ai/flows/channel-assistant-suggestions';
 import { UserAvatar } from './user-avatar';
 import { Channel, User } from '@/lib/types';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
 const formSchema = z.object({
@@ -63,7 +63,7 @@ export function CreateChannelDialog({
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const allUsersQuery = useMemo(() => {
+  const allUsersQuery = useMemoFirebase(() => {
     if(!firestore) return null;
     return collection(firestore, 'users');
   }, [firestore]);
