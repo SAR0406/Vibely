@@ -13,6 +13,7 @@ type ThemeContextType = {
   theme: Theme;
   setTheme: (themeId: string) => void;
   isDarkMode: boolean;
+  setIsDarkMode: (isDark: boolean) => void;
   customColors: CustomColors;
   setCustomColors: (colors: CustomColors) => void;
 };
@@ -39,24 +40,29 @@ const hexToHslString = (hex: string): string => {
         }
         h /= 6;
     }
-    return `${(h * 360).toFixed(1)} ${s > 0 ? (s * 100).toFixed(1) + '%' : '0%'} ${l > 0 ? (l * 100).toFixed(1) + '%' : '0%'}`;
+    return `${(h * 360).toFixed(1)} ${(s * 100).toFixed(1)}% ${(l * 100).toFixed(1)}%`;
 };
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [themeId, setThemeId] = useState('vibely');
+  const [isDarkMode, setIsDarkModeState] = useState(true);
   const [customColors, setCustomColorsState] = useState<CustomColors>({
     primary: '#7c3aed',
-    background: '#ffffff',
-    accent: '#f3f4f6',
+    background: '#030712', // dark default
+    accent: '#1e293b', // dark default
   });
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('app-theme');
+    const storedMode = localStorage.getItem('app-theme-mode');
     const storedCustomColors = localStorage.getItem('app-custom-colors');
     
     if (storedTheme && themes.find(t => t.id === storedTheme)) {
       setThemeId(storedTheme);
+    }
+    if (storedMode) {
+      setIsDarkModeState(storedMode === 'dark');
     }
     if (storedCustomColors) {
       setCustomColorsState(JSON.parse(storedCustomColors));
@@ -73,14 +79,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     const root = window.document.documentElement;
     
     const allThemeIds = themes.map(t => t.id);
-    root.classList.remove(...allThemeIds);
+    root.classList.remove(...allThemeIds, 'dark', 'light');
+
     root.classList.add(themeId);
-    
-    root.classList.add('dark');
+    root.classList.add(isDarkMode ? 'dark' : 'light');
 
     if (themeId === 'custom') {
-        const customTheme = currentTheme.darkColors;
-        if (customTheme) {
+        const customThemeColors = isDarkMode ? currentTheme.darkColors : currentTheme.lightColors;
+        if (customThemeColors) {
             root.style.setProperty('--primary', hexToHslString(customColors.primary));
             root.style.setProperty('--background', hexToHslString(customColors.background));
             root.style.setProperty('--accent', hexToHslString(customColors.accent));
@@ -91,15 +97,19 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         root.style.removeProperty('--accent');
     }
 
-
     localStorage.setItem('app-theme', themeId);
+    localStorage.setItem('app-theme-mode', isDarkMode ? 'dark' : 'light');
 
-  }, [themeId, customColors, mounted]);
+  }, [themeId, isDarkMode, customColors, mounted]);
 
   const theme = useMemo(() => themes.find(t => t.id === themeId) || themes[0], [themeId]);
 
   const handleSetTheme = (newThemeId: string) => {
     setThemeId(newThemeId);
+  };
+
+  const handleSetIsDarkMode = (isDark: boolean) => {
+    setIsDarkModeState(isDark);
   };
   
   const setCustomColors = useCallback((colors: CustomColors) => {
@@ -110,7 +120,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [themeId]);
 
-  const value = { theme, setTheme: handleSetTheme, isDarkMode: true, customColors, setCustomColors };
+  const value = { 
+    theme, 
+    setTheme: handleSetTheme, 
+    isDarkMode, 
+    setIsDarkMode: handleSetIsDarkMode, 
+    customColors, 
+    setCustomColors 
+  };
 
   if (!mounted) {
     return null;

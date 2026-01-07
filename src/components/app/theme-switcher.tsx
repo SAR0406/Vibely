@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Palette, Settings2 } from 'lucide-react';
+import { Palette, Settings2, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,9 +19,11 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { ColorPickerDialog } from './color-picker-dialog';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 
 export function ThemeSwitcher() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, isDarkMode, setIsDarkMode } = useTheme();
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
   return (
@@ -41,7 +43,19 @@ export function ThemeSwitcher() {
           </TooltipContent>
         </Tooltip>
         <DropdownMenuPortal>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-56">
+             <div className="flex items-center justify-between px-2 py-1.5">
+                <Label htmlFor="dark-mode-switch" className="flex items-center gap-2 text-sm">
+                    {isDarkMode ? <Moon className="size-4" /> : <Sun className="size-4" />}
+                    <span>{isDarkMode ? 'Dark Mode' : 'Light Mode'}</span>
+                </Label>
+                <Switch
+                    id="dark-mode-switch"
+                    checked={isDarkMode}
+                    onCheckedChange={setIsDarkMode}
+                />
+            </div>
+            <DropdownMenuSeparator />
             {themes.map((t) => (
               <DropdownMenuItem
                 key={t.id}
@@ -51,7 +65,7 @@ export function ThemeSwitcher() {
                 <div className="flex items-center gap-2">
                   <div
                     className="size-4 rounded-full border"
-                    style={{ backgroundColor: t.darkColors?.primary || 'hsl(var(--primary))' }}
+                    style={{ backgroundColor: isDarkMode ? t.darkColors?.primary : t.lightColors?.primary }}
                   ></div>
                   {t.name}
                 </div>
