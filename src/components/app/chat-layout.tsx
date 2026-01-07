@@ -32,7 +32,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAuth, useUser, useDoc, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, query, where, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -140,16 +140,17 @@ export default function ChatLayout() {
   const { data: channels, isLoading: channelsLoading } = useChannels();
 
   const userDocRef = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return doc(firestore, 'users', user.uid);
   }, [user, firestore]);
   
+  const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
+
   const chatRequestsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(collection(firestore, `users/${user.uid}/chatRequests`), where('status', '==', 'pending'));
   }, [user, firestore]);
 
-  const { data: currentUserProfile } = useDoc<UserType>(userDocRef);
   const { data: chatRequests } = useCollection<ChatRequest>(chatRequestsQuery);
 
   useEffect(() => {
@@ -176,6 +177,42 @@ export default function ChatLayout() {
       };
     }
   }, [user, firestore]);
+  
+  useEffect(() => {
+    if (isProfileLoading || !currentUserProfile || !firestore || !user) return;
+    
+    const checkUserDirectory = async () => {
+        const userDirRef = doc(firestore, 'userDirectory', user.uid);
+        const docSnap = await getDoc(userDirRef);
+        
+        if (!docSnap.exists()) {
+            const userCode = currentUserProfile.userCode || `${currentUserProfile.username}#${Math.floor(1000 + Math.random() * 9000)}`;
+            const searchableTerms = [
+                ...new Set([
+                    currentUserProfile.username?.toLowerCase(),
+                    currentUserProfile.fullName?.toLowerCase(),
+                    ...(currentUserProfile.fullName?.toLowerCase().split(' ') || [])
+                ])
+            ].filter(Boolean);
+
+            setDocumentNonBlocking(userDirRef, {
+                id: user.uid,
+                userCode,
+                fullName: currentUserProfile.fullName,
+                avatarUrl: currentUserProfile.avatarUrl,
+                searchableTerms: searchableTerms,
+            }, { merge: false });
+
+            if (!currentUserProfile.userCode) {
+                 const userRef = doc(firestore, 'users', user.uid);
+                 updateDocumentNonBlocking(userRef, { userCode });
+            }
+        }
+    };
+    
+    checkUserDirectory();
+
+  }, [currentUserProfile, isProfileLoading, firestore, user]);
 
   const currentUser = useMemo(() => {
     if (!user || !currentUserProfile) return null;
