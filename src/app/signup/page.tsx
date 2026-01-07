@@ -148,6 +148,10 @@ export default function SignupPage() {
     const randomAvatar =
       PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)]
         .imageUrl;
+    
+    // Generate a unique user code
+    const userCode = `${username}#${Math.floor(1000 + Math.random() * 9000)}`;
+
     setDocumentNonBlocking(
       userDocRef,
       {
@@ -155,6 +159,7 @@ export default function SignupPage() {
         email,
         fullName,
         username,
+        userCode,
         avatarUrl: avatarUrl || randomAvatar,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -206,11 +211,12 @@ export default function SignupPage() {
       
       // For GitHub or returning Google users, create their profile immediately
       if(isNewUser) {
+        const username = socialUser.displayName?.replace(/\s+/g, '').toLowerCase() || socialUser.email!.split('@')[0];
         createFirestoreUser(
           socialUser.uid,
           socialUser.email!,
           socialUser.displayName || socialUser.email!.split('@')[0],
-          socialUser.displayName?.replace(/\s+/g, '').toLowerCase() || socialUser.email!.split('@')[0],
+          username,
           socialUser.photoURL
         );
       }

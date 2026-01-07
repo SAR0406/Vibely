@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "UserProfile": {
@@ -19,6 +18,10 @@
         "username": {
           "type": "string",
           "description": "The public username for the user."
+        },
+        "userCode": {
+          "type": "string",
+          "description": "A unique, shareable code for users to find each other (e.g., username#1234)."
         },
         "fullName": {
           "type": "string",
@@ -49,7 +52,7 @@
           "format": "date-time"
         }
       },
-      "required": ["id", "email", "username", "fullName", "createdAt", "updatedAt"]
+      "required": ["id", "email", "username", "userCode", "fullName", "createdAt", "updatedAt"]
     },
     "Channel": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -137,7 +140,7 @@
   "firestore": {
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
-      "description": "Stores all user profile data. Each user's document is protected, but the collection is listable for user discovery features."
+      "description": "Stores all user profile data. Each user's document is protected, and the collection can only be queried on indexed fields like 'userCode'."
     },
     "/channels/{channelId}": {
       "schema": { "$ref": "#/entities/Channel" },

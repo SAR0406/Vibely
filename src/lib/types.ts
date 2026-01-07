@@ -8,6 +8,7 @@ export type User = {
   // Fields from firestore
   fullName?: string;
   username?: string;
+  userCode?: string;
   email?: string;
   lastSeen?: any; // Can be a server timestamp or a Date object
 };

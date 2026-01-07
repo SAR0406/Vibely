@@ -79,14 +79,10 @@ export function CreateChannelDialog({
   });
 
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore || !debouncedSearchTerm) return null; // Only search when there's a term
-    const term = debouncedSearchTerm.toLowerCase();
+    if (!firestore || !debouncedSearchTerm) return null;
     return query(
       collection(firestore, 'users'),
-      or(
-        where('username', '>=', term),
-        where('username', '<=', term + '\uf8ff')
-      )
+      where('userCode', '==', debouncedSearchTerm)
     );
   }, [firestore, debouncedSearchTerm]);
 
@@ -98,14 +94,12 @@ export function CreateChannelDialog({
   }, [user, firestore]);
   const { data: currentUserProfile } = useDoc<User>(currentUserDocRef);
 
-  // Set the current user as the initial selected member
   useEffect(() => {
     if (currentUserProfile && !selectedUsers.some(u => u.id === currentUserProfile.id)) {
         setSelectedUsers([currentUserProfile]);
     }
    }, [currentUserProfile, selectedUsers]);
 
-   // Reset state when the dialog is opened
    useEffect(() => {
     if (isOpen) {
         form.reset({ name: '', members: user ? [user.uid] : []});
@@ -116,7 +110,6 @@ export function CreateChannelDialog({
     }
    }, [isOpen, user, form, currentUserProfile]);
 
-   // Sync selected users with the form state
    useEffect(() => {
     const memberIds = selectedUsers.map(u => u.id);
     form.setValue('members', memberIds, { shouldValidate: true });
@@ -125,7 +118,6 @@ export function CreateChannelDialog({
   const channelName = form.watch('name');
   const memberIds = form.watch('members');
 
-  // Fetch AI suggestions when channel name or members change
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (!channelName || channelName.length < 3 || memberIds.length <= 2) {
@@ -152,7 +144,7 @@ export function CreateChannelDialog({
 
     const timeoutId = setTimeout(fetchSuggestions, 500);
     return () => clearTimeout(timeoutId);
-  }, [channelName, memberIds.length, selectedUsers]); // Depend on memberIds.length to re-trigger
+  }, [channelName, memberIds.length, selectedUsers]);
 
   const toggleMember = (member: User) => {
     if (member.id === user?.uid) return; 
@@ -206,7 +198,7 @@ export function CreateChannelDialog({
         <DialogHeader>
           <DialogTitle className="font-headline">Create a New Channel or DM</DialogTitle>
           <DialogDescription>
-            Select one person for a direct message, or multiple for a group. Public channels require a name.
+            Select one person for a direct message, or multiple for a group. Add users by their unique user code (e.g. "username#1234").
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -243,7 +235,7 @@ export function CreateChannelDialog({
                 </div>
                 
                 <Input
-                    placeholder="Search to add members..."
+                    placeholder="Search by user code (e.g. janedoe#1234)"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                 />
@@ -251,7 +243,7 @@ export function CreateChannelDialog({
                 <ScrollArea className="h-48 border rounded-md">
                      <div className="p-2">
                         {isLoadingUsers && <Loader2 className="mx-auto my-4 size-5 animate-spin" />}
-                        {!isLoadingUsers && debouncedSearchTerm && displayedSearchResults.length === 0 && <p className='text-center text-sm text-muted-foreground p-4'>No users found.</p>}
+                        {!isLoadingUsers && debouncedSearchTerm && displayedSearchResults.length === 0 && <p className='text-center text-sm text-muted-foreground p-4'>No users found for that code.</p>}
                         {displayedSearchResults.map(u => (
                             <Button
                                 type="button"

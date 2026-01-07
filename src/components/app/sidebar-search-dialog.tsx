@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, or, and, limit } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { User } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 
@@ -38,17 +38,10 @@ export function SidebarSearchDialog({
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !debouncedSearchTerm) return null;
     
-    const term = debouncedSearchTerm.toLowerCase();
-    // This query performs a prefix search on the username.
-    // Firestore can efficiently execute this query with a basic index.
     return query(
       collection(firestore, 'users'),
-      and(
-        where('username', '>=', term),
-        where('username', '<=', term + '\uf8ff'),
-        where('id', '!=', currentUser.id) // Exclude current user from results
-      ),
-      limit(10)
+      where('userCode', '==', debouncedSearchTerm),
+      where('id', '!=', currentUser.id)
     );
   }, [firestore, debouncedSearchTerm, currentUser.id]);
 
@@ -66,12 +59,12 @@ export function SidebarSearchDialog({
         <DialogHeader className="p-6 pb-2">
           <DialogTitle className="font-headline">Search Users</DialogTitle>
           <DialogDescription>
-            Find and start a conversation with anyone on the platform.
+            Find and start a conversation by entering a user's unique code (e.g. "username#1234").
           </DialogDescription>
         </DialogHeader>
         <div className="px-6">
           <Input
-            placeholder="Search by username..."
+            placeholder="Enter user code..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full"
@@ -86,7 +79,7 @@ export function SidebarSearchDialog({
             )}
             {!isLoading && debouncedSearchTerm && (!users || users.length === 0) && (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                No users found.
+                No user found with that code.
               </p>
             )}
             <div className="space-y-2">
