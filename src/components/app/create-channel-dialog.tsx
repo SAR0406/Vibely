@@ -33,7 +33,7 @@ import {
 import { UserAvatar } from './user-avatar';
 import { Channel, User } from '@/lib/types';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 
 const formSchema = z.object({
@@ -64,10 +64,11 @@ export function CreateChannelDialog({
   const { user } = useUser();
   const firestore = useFirestore();
 
+  // Query for all users, only if the dialog is open.
   const allUsersQuery = useMemoFirebase(() => {
-    if(!firestore) return null;
-    return collection(firestore, 'users');
-  }, [firestore]);
+    if (!firestore || !isOpen) return null;
+    return query(collection(firestore, 'users'));
+  }, [firestore, isOpen]);
 
   const { data: allUsers, isLoading: isLoadingUsers } = useCollection<User>(allUsersQuery);
 
@@ -100,7 +101,7 @@ export function CreateChannelDialog({
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (channelName.length < 3 || !allUsers) {
+      if (channelName.length < 3 || !allUsers || allUsers.length === 0) {
         setSuggestions(null);
         return;
       }
@@ -250,7 +251,7 @@ export function CreateChannelDialog({
                     </div>
                 ) : (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                        {channelName.length < 3 ? 'Enter a channel name to get AI suggestions.' : (isLoadingUsers ? 'Loading users...' : 'Generating suggestions...')}
+                        {channelName.length < 3 ? 'Enter a channel name to get AI suggestions.' : (isLoadingUsers ? 'Loading users...' : 'Type a name to get suggestions.')}
                     </p>
                 )}
             </div>

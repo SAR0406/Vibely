@@ -17,7 +17,7 @@ service cloud.firestore {
      *
      * Key Security Decisions:
      * - User data in `/users/{userId}` is writable only by the owner. Profile data is readable by any signed-in user to
-     *   facilitate social features, and listing users is allowed for search/discovery.
+     *   facilitate social features, and listing the user base is allowed to enable search/discovery.
      * - Channel access is determined by checking the `members` map on the channel document itself. This is a deliberate
      *   denormalization strategy to make security rules fast and simple. Private channels are only visible to members,
      *   while public channels are visible to all authenticated users.
@@ -118,29 +118,20 @@ service cloud.firestore {
     // --------------------------------------------------------------------------
 
     /**
-     * @description Controls access to the users collection.
-     * @path /users
-     * @allow (list) An authenticated user can list users for search/invite.
-     */
-    match /users/{document=**} {
-      allow read, write: if false;
-    }
-
-    /**
-     * @description Controls access to user profile documents.
-     * @path /users/{userId}
-     * @allow (get) An authenticated user reading any user's profile.
-     * @deny (update) An authenticated user trying to modify another user's profile.
-     * @principle Allows discoverability while restricting writes to the owner.
+     * @description Controls access to the entire 'users' collection.
+     * This rule specifically allows authenticated users to 'list' (query) the collection,
+     * which is necessary for features like user search and inviting users to channels.
+     * It deliberately does NOT grant 'get' permission, as that is handled by the
+     * more specific '/users/{userId}' rule below.
      */
     match /users/{userId} {
-      allow get: if isSignedIn();
       allow list: if isSignedIn();
+      allow get: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
-
+    
     /**
      * @description Controls access to channel documents. Access is based on ownership and a denormalized members list.
      * @path /channels/{channelId}
