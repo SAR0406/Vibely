@@ -14,44 +14,44 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Channel, Automation, User } from '@/lib/types';
+import { Chat, Automation, User } from '@/lib/types';
 import { enableAdjustAutomations } from '@/ai/flows/enable-adjust-automations';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 
 
 type AutomationSettingsDialogProps = {
-  channel: Channel | null;
+  channel: Chat | null;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onAutomationsUpdate: (channelId: string, updatedAutomations: Automation[]) => void;
 };
 
 export function AutomationSettingsDialog({
-  channel,
+  channel: chat,
   isOpen,
   onOpenChange,
   onAutomationsUpdate,
 }: AutomationSettingsDialogProps) {
   const [automations, setAutomations] = useState<Automation[]>(
-    channel?.automations || []
+    chat?.automations || []
   );
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
   
   const channelUsersQuery = useMemoFirebase(() => {
-    if (!firestore || !channel || !channel.members || channel.members.length === 0) return null;
+    if (!firestore || !chat || !chat.members || chat.members.length === 0) return null;
     
     // Firestore 'in' queries are limited to 30 items. 
-    // If a channel can have more members, this would need pagination or a different approach.
-    const memberIds = channel.members.length > 30 ? channel.members.slice(0, 30) : channel.members;
+    // If a chat can have more members, this would need pagination or a different approach.
+    const memberIds = chat.members.length > 30 ? chat.members.slice(0, 30) : chat.members;
     return query(collection(firestore, 'users'), where('id', 'in', memberIds));
-  }, [firestore, channel]);
+  }, [firestore, chat]);
 
   const { data: channelUsers } = useCollection<User>(channelUsersQuery);
 
-  if (!channel) return null;
+  if (!chat) return null;
 
   const handleSwitchChange = (automationId: string, checked: boolean) => {
     setAutomations((prev) =>
@@ -85,14 +85,14 @@ export function AutomationSettingsDialog({
       const memberList = channelUsers?.map(u => u.fullName || 'User') || [];
 
       await enableAdjustAutomations({
-        channelName: channel.name,
-        channelDescription: channel.description,
+        channelName: chat.name,
+        channelDescription: chat.description,
         memberList,
         automationSettings,
         automationAdjustments,
       });
 
-      onAutomationsUpdate(channel.id, automations);
+      onAutomationsUpdate(chat.id, automations);
 
       toast({
         title: 'Success!',
@@ -116,10 +116,10 @@ export function AutomationSettingsDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="font-headline">
-            Automation Settings for "{channel.name}"
+            Automation Settings for "{chat.name}"
           </DialogTitle>
           <DialogDescription>
-            Enable and configure automations for this channel.
+            Enable and configure automations for this chat.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
@@ -154,7 +154,7 @@ export function AutomationSettingsDialog({
           ))}
           {automations.length === 0 && (
             <p className="text-center text-muted-foreground">
-              No automations available for this channel yet.
+              No automations available for this chat yet.
             </p>
           )}
         </div>

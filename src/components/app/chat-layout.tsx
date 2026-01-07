@@ -11,15 +11,14 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarInset,
 } from '@/components/ui/sidebar';
 import { MessageSquare, PlusCircle, Users, LogOut, Search, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import type { Channel, User as UserType, Message, ChatRequest } from '@/lib/types';
+import type { Chat, User as UserType, Message, ChatRequest } from '@/lib/types';
 import { ChatView } from './chat-view';
 import { UserAvatar } from './user-avatar';
-import { CreateChannelDialog } from './create-channel-dialog';
+import { CreateChatDialog } from './create-chat-dialog';
 import { SidebarSearchDialog } from './sidebar-search-dialog';
 import { UserProfileDialog } from './user-profile-dialog';
 import { ChatRequestsDialog } from './chat-requests-dialog';
@@ -54,26 +53,26 @@ const ChevronsRight = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-function useChannels() {
+function useChats() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const channelsQuery = useMemoFirebase(() => {
+  const chatsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
-      collection(firestore, 'channels'),
+      collection(firestore, 'chats'),
       where('members', 'array-contains', user.uid)
     );
   }, [firestore, user]);
 
-  return useCollection<Channel>(channelsQuery);
+  return useCollection<Chat>(chatsQuery);
 }
 
-const DMMenuItem = ({ channel, isActive, onSelect }: { channel: Channel, isActive: boolean, onSelect: (id: string) => void }) => {
+const DMMenuItem = ({ chat, isActive, onSelect }: { chat: Chat, isActive: boolean, onSelect: (id: string) => void }) => {
     const { user } = useUser();
     const firestore = useFirestore();
 
-    const otherUserId = useMemo(() => channel.members.find(m => m !== user?.uid), [channel.members, user]);
+    const otherUserId = useMemo(() => chat.members.find(m => m !== user?.uid), [chat.members, user]);
 
     const otherUserDocRef = useMemoFirebase(() => {
         if (!firestore || !otherUserId) return null;
@@ -84,8 +83,8 @@ const DMMenuItem = ({ channel, isActive, onSelect }: { channel: Channel, isActiv
 
     const messagesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'channels', channel.id, 'messages'));
-    }, [firestore, channel.id]);
+        return query(collection(firestore, 'chats', chat.id, 'messages'));
+    }, [firestore, chat.id]);
 
     const { data: messages } = useCollection<Message>(messagesQuery);
     
@@ -107,7 +106,7 @@ const DMMenuItem = ({ channel, isActive, onSelect }: { channel: Channel, isActiv
     return (
         <SidebarMenuItem>
             <SidebarMenuButton
-                onClick={() => onSelect(channel.id)}
+                onClick={() => onSelect(chat.id)}
                 isActive={isActive}
                 tooltip={otherUser.fullName}
             >
@@ -137,7 +136,7 @@ export default function ChatLayout() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const { data: channels, isLoading: channelsLoading } = useChannels();
+  const { data: chats, isLoading: chatsLoading } = useChats();
 
   const userDocRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -193,7 +192,7 @@ export default function ChatLayout() {
                     currentUserProfile.fullName?.toLowerCase(),
                     ...(currentUserProfile.fullName?.toLowerCase().split(' ') || [])
                 ])
-            ].filter(Boolean);
+            ].filter(Boolean) as string[];
 
             setDocumentNonBlocking(userDirRef, {
                 id: user.uid,
@@ -225,27 +224,27 @@ export default function ChatLayout() {
     };
   }, [user, currentUserProfile]);
 
-  const selectedChannelId = searchParams.get('id');
+  const selectedChatId = searchParams.get('id');
 
-  const selectedChannel = useMemo(
-    () => channels?.find((c) => c.id === selectedChannelId),
-    [channels, selectedChannelId]
+  const selectedChat = useMemo(
+    () => chats?.find((c) => c.id === selectedChatId),
+    [chats, selectedChatId]
   );
   
-  const handleSelectChannel = (channelId: string) => {
+  const handleSelectChat = (chatId: string) => {
     const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.set('id', channelId);
+    newSearchParams.set('id', chatId);
     router.push(`${pathname}?${newSearchParams.toString()}`);
   }
 
-  const handleCreateChannel = (newChannelData: Omit<Channel, 'id'>) => {
-    const channelId = `channel-${Date.now()}`;
-    const channelRef = doc(firestore, 'channels', channelId);
-    const channelWithId = { ...newChannelData, id: channelId };
+  const handleCreateChat = (newChatData: Omit<Chat, 'id'>) => {
+    const chatId = `chat-${Date.now()}`;
+    const chatRef = doc(firestore, 'chats', chatId);
+    const chatWithId = { ...newChatData, id: chatId };
 
-    setDocumentNonBlocking(channelRef, channelWithId, {merge: false});
+    setDocumentNonBlocking(chatRef, chatWithId, {merge: false});
 
-    handleSelectChannel(channelId);
+    handleSelectChat(chatId);
   };
 
   const handleShowUserProfile = (userToShow: UserType) => {
@@ -257,20 +256,20 @@ export default function ChatLayout() {
   const handleStartDirectMessage = (otherUser: UserType) => {
     if (!currentUser) return;
   
-    const existingChannel = channels?.find(c => 
+    const existingChat = chats?.find(c => 
       c.isDM &&
       c.members.length === 2 &&
       c.members.includes(currentUser.id) &&
       c.members.includes(otherUser.id)
     );
   
-    if (existingChannel) {
-      handleSelectChannel(existingChannel.id);
+    if (existingChat) {
+      handleSelectChat(existingChat.id);
     } else {
-      const channelId = `dm-${[currentUser.id, otherUser.id].sort().join('-')}`;
-      const channelRef = doc(firestore, 'channels', channelId);
-      const newChannel: Channel = {
-        id: channelId,
+      const chatId = `dm-${[currentUser.id, otherUser.id].sort().join('-')}`;
+      const chatRef = doc(firestore, 'chats', chatId);
+      const newChat: Chat = {
+        id: chatId,
         name: otherUser.fullName || otherUser.username || 'Direct Message',
         description: `Direct message with ${otherUser.fullName}`,
         members: [currentUser.id, otherUser.id],
@@ -282,8 +281,8 @@ export default function ChatLayout() {
         updatedAt: new Date().toISOString(),
       };
   
-      setDocumentNonBlocking(channelRef, newChannel, { merge: false });
-      handleSelectChannel(channelId);
+      setDocumentNonBlocking(chatRef, newChat, { merge: false });
+      handleSelectChat(chatId);
     }
     setIsProfileOpen(false);
     setIsRequestsOpen(false);
@@ -301,9 +300,9 @@ export default function ChatLayout() {
     router.push('/login');
   };
 
-  const publicChannels = useMemo(() => channels?.filter((c) => c.isPublic && !c.isDM) || [], [channels]);
-  const groupDMs = useMemo(() => channels?.filter(c => c.isDM && c.members.length > 2) || [], [channels]);
-  const directMessages = useMemo(() => channels?.filter(c => c.isDM && c.members.length === 2) || [], [channels]);
+  const publicChats = useMemo(() => chats?.filter((c) => c.isPublic && !c.isDM) || [], [chats]);
+  const groupDMs = useMemo(() => chats?.filter(c => c.isDM && c.members.length > 2) || [], [chats]);
+  const directMessages = useMemo(() => chats?.filter(c => c.isDM && c.members.length === 2) || [], [chats]);
 
 
   return (
@@ -343,7 +342,7 @@ export default function ChatLayout() {
                     </TooltipContent>
                 </Tooltip>
 
-                {channelsLoading ? (
+                {chatsLoading ? (
                     <div className="space-y-2 p-2">
                         <Skeleton className="h-8 w-full" />
                         <Skeleton className="h-8 w-full" />
@@ -351,21 +350,21 @@ export default function ChatLayout() {
                     </div>
                 ) : (
                     <>
-                        {publicChannels.length > 0 && (
+                        {publicChats.length > 0 && (
                         <div>
                         <p className="px-2 text-xs font-semibold uppercase text-muted-foreground group-data-[collapsible=icon]:hidden">
-                            Channels
+                            Chats
                         </p>
                         <SidebarMenu>
-                            {publicChannels.map((channel) => (
-                            <SidebarMenuItem key={channel.id}>
+                            {publicChats.map((chat) => (
+                            <SidebarMenuItem key={chat.id}>
                                 <SidebarMenuButton
-                                onClick={() => handleSelectChannel(channel.id)}
-                                isActive={selectedChannelId === channel.id}
-                                tooltip={channel.name}
+                                onClick={() => handleSelectChat(chat.id)}
+                                isActive={selectedChatId === chat.id}
+                                tooltip={chat.name}
                                 >
                                 <MessageSquare />
-                                <span>{channel.name}</span>
+                                <span>{chat.name}</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                             ))}
@@ -379,15 +378,15 @@ export default function ChatLayout() {
                                  Group DMs
                              </p>
                              <SidebarMenu>
-                                 {groupDMs.map((channel) => (
-                                 <SidebarMenuItem key={channel.id}>
+                                 {groupDMs.map((chat) => (
+                                 <SidebarMenuItem key={chat.id}>
                                      <SidebarMenuButton
-                                     onClick={() => handleSelectChannel(channel.id)}
-                                     isActive={selectedChannelId === channel.id}
-                                     tooltip={channel.name}
+                                     onClick={() => handleSelectChat(chat.id)}
+                                     isActive={selectedChatId === chat.id}
+                                     tooltip={chat.name}
                                      >
                                      <Users />
-                                     <span>{channel.name}</span>
+                                     <span>{chat.name}</span>
                                      </SidebarMenuButton>
                                  </SidebarMenuItem>
                                  ))}
@@ -401,12 +400,12 @@ export default function ChatLayout() {
                                 Direct Messages
                                 </p>
                                 <SidebarMenu>
-                                {directMessages.map((channel) => (
+                                {directMessages.map((chat) => (
                                     <DMMenuItem 
-                                        key={channel.id}
-                                        channel={channel}
-                                        isActive={selectedChannelId === channel.id}
-                                        onSelect={handleSelectChannel}
+                                        key={chat.id}
+                                        chat={chat}
+                                        isActive={selectedChatId === chat.id}
+                                        onSelect={handleSelectChat}
                                     />
                                 ))}
                                 </SidebarMenu>
@@ -427,7 +426,7 @@ export default function ChatLayout() {
                   >
                     <PlusCircle className="size-4" />
                     <span className="group-data-[collapsible=icon]:hidden">
-                      Create Channel
+                      Create Chat
                     </span>
                   </Button>
                 </TooltipTrigger>
@@ -435,7 +434,7 @@ export default function ChatLayout() {
                   side="right"
                   className="hidden group-data-[collapsible=icon]:block"
                 >
-                  Create Channel
+                  Create Chat
                 </TooltipContent>
               </Tooltip>
 
@@ -514,16 +513,16 @@ export default function ChatLayout() {
               <SidebarTrigger />
             </header>
             <ChatView
-              key={selectedChannelId}
+              key={selectedChatId}
               currentUser={currentUser}
-              channel={selectedChannel || null}
+              chat={selectedChat || null}
             />
           </SidebarInset>
         </div>
-        <CreateChannelDialog
+        <CreateChatDialog
           isOpen={isCreateOpen}
           onOpenChange={setIsCreateOpen}
-          onCreateChannel={handleCreateChannel}
+          onCreateChat={handleCreateChat}
         />
         {currentUser && (
             <>

@@ -25,20 +25,20 @@ service cloud.firestore {
     }
 
     /**
-     * Returns true if the user is a member of a given channel.
+     * Returns true if the user is a member of a given chat.
      * This is the secure and efficient way to check for membership.
-     * @param channelId The ID of the channel to check.
+     * @param chatId The ID of the chat to check.
      */
-    function isChannelMember(channelId) {
-      return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/channels/$(channelId)).data.members;
+    function isChatMember(chatId) {
+      return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members;
     }
 
     /**
-     * Returns true if the user is the owner of a given channel.
-     * @param channelId The ID of the channel to check.
+     * Returns true if the user is the owner of a given chat.
+     * @param chatId The ID of the chat to check.
      */
-    function isChannelOwner(channelId) {
-        return isSignedIn() && request.auth.uid == get(/databases/$(database)/documents/channels/$(channelId)).data.ownerId;
+    function isChatOwner(chatId) {
+        return isSignedIn() && request.auth.uid == get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId;
     }
 
     // --------------------------------------------------------------------------
@@ -92,34 +92,34 @@ service cloud.firestore {
 
     // --------------------------------------------------------------------------
     //
-    // COLLECTION: channels and subcollections
+    // COLLECTION: chats and subcollections
     //
     // --------------------------------------------------------------------------
 
-    match /channels/{channelId} {
+    match /chats/{chatId} {
       /**
-       * @allow (get, update) Full read/update access is granted only to members of the channel.
-       * @allow (list) Users can only list channels they are members of. This requires a `where('members', 'array-contains', request.auth.uid)` clause on the client-side query.
-       * @allow (create) Any signed-in user can create a new channel, provided they include themselves as a member and the owner.
-       * @allow (delete) Only the channel's designated owner can delete it.
+       * @allow (get, update) Full read/update access is granted only to members of the chat.
+       * @allow (list) Users can only list chats they are members of. This requires a `where('members', 'array-contains', request.auth.uid)` clause on the client-side query.
+       * @allow (create) Any signed-in user can create a new chat, provided they include themselves as a member and the owner.
+       * @allow (delete) Only the chat's designated owner can delete it.
        */
-      allow get, update: if isChannelMember(channelId);
+      allow get, update: if isChatMember(chatId);
       allow list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid in request.resource.data.members && request.resource.data.ownerId == request.auth.uid;
-      allow delete: if isChannelOwner(channelId);
+      allow delete: if isChatOwner(chatId);
 
       // SUB-COLLECTION: messages
       match /messages/{messageId} {
         /**
-         * @allow (read, list) Users can only read messages if they are a member of the parent channel.
-         * @allow (create) A user can only create a message if they are a channel member, and they must be the author.
+         * @allow (read, list) Users can only read messages if they are a member of the parent chat.
+         * @allow (create) A user can only create a message if they are a chat member, and they must be the author.
          * @allow (update) Users can only update their own messages.
-         * @allow (delete) Users can delete their own messages. Channel owners can also delete any message in their channel.
+         * @allow (delete) Users can delete their own messages. chat owners can also delete any message in their chat.
          */
-        allow read, list: if isChannelMember(channelId);
-        allow create: if isChannelMember(channelId) && request.resource.data.authorId == request.auth.uid;
-        allow update: if isChannelMember(channelId) && resource.data.authorId == request.auth.uid;
-        allow delete: if isChannelMember(channelId) && (resource.data.authorId == request.auth.uid || isChannelOwner(channelId));
+        allow read, list: if isChatMember(chatId);
+        allow create: if isChatMember(chatId) && request.resource.data.authorId == request.auth.uid;
+        allow update: if isChatMember(chatId) && resource.data.authorId == request.auth.uid;
+        allow delete: if isChatMember(chatId) && (resource.data.authorId == request.auth.uid || isChatOwner(chatId));
       }
     }
   }

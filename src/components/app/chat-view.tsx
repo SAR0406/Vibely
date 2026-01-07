@@ -7,7 +7,7 @@ import { collection, query, orderBy, doc, where, writeBatch, serverTimestamp } f
 import { formatDistanceToNow } from 'date-fns';
 
 import { cn } from '@/lib/utils';
-import type { Channel, Message, User } from '@/lib/types';
+import type { Chat, Message, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,16 +21,16 @@ import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/no
 import { Skeleton } from '../ui/skeleton';
 
 
-function useMessages(channelId: string | null) {
+function useMessages(chatId: string | null) {
   const firestore = useFirestore();
 
   const messagesQuery = useMemoFirebase(() => {
-    if (!firestore || !channelId) return null;
+    if (!firestore || !chatId) return null;
     return query(
-      collection(firestore, 'channels', channelId, 'messages'),
+      collection(firestore, 'chats', chatId, 'messages'),
       orderBy('timestamp', 'asc')
     );
-  }, [firestore, channelId]);
+  }, [firestore, chatId]);
 
   return useCollection<Message>(messagesQuery);
 }
@@ -97,27 +97,27 @@ const DMHeaderContent = ({ otherUserId }: { otherUserId: string }) => {
 
 
 type ChatViewProps = {
-  channel: Channel | null;
+  chat: Chat | null;
   currentUser: (User & { email: string }) | null;
 };
 
-export function ChatView({ channel, currentUser }: ChatViewProps) {
+export function ChatView({ chat, currentUser }: ChatViewProps) {
   const [inputValue, setInputValue] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
 
-  const { data: messages, isLoading: messagesLoading } = useMessages(channel?.id || null);
+  const { data: messages, isLoading: messagesLoading } = useMessages(chat?.id || null);
 
-  const channelUsersQuery = useMemoFirebase(() => {
-    if (!firestore || !channel || channel.members.length === 0) return null;
-    return query(collection(firestore, 'users'), where('id', 'in', channel.members));
-  }, [firestore, channel]);
+  const chatUsersQuery = useMemoFirebase(() => {
+    if (!firestore || !chat || chat.members.length === 0) return null;
+    return query(collection(firestore, 'users'), where('id', 'in', chat.members));
+  }, [firestore, chat]);
 
-  const { data: channelUsers } = useCollection<User>(channelUsersQuery);
+  const { data: chatUsers } = useCollection<User>(chatUsersQuery);
 
   const markMessagesAsRead = async () => {
-    if (!channel || !currentUser || messagesLoading || !messages || !firestore) return;
+    if (!chat || !currentUser || messagesLoading || !messages || !firestore) return;
 
     const batch = writeBatch(firestore);
     const unreadMessages = messages.filter(
@@ -127,7 +127,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
     if (unreadMessages.length > 0) {
         unreadMessages.forEach((msg) => {
             if (!msg.id) return;
-            const msgRef = doc(firestore, 'channels', channel.id, 'messages', msg.id);
+            const msgRef = doc(firestore, 'chats', chat.id, 'messages', msg.id);
             batch.update(msgRef, { readStatus: 'read' });
         });
         await batch.commit().catch(console.error);
@@ -135,10 +135,10 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
   };
 
   useEffect(() => {
-    if (channel?.id && currentUser?.id) {
+    if (chat?.id && currentUser?.id) {
         markMessagesAsRead();
     }
-  }, [channel?.id, messages, currentUser?.id]);
+  }, [chat?.id, messages, currentUser?.id]);
   
   useEffect(() => {
     if (scrollViewportRef.current) {
@@ -149,12 +149,12 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
         });
       }, 100);
     }
-  }, [messages, channel?.id]);
+  }, [messages, chat?.id]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim() && channel && currentUser && firestore) {
-      const messagesColRef = collection(firestore, 'channels', channel.id, 'messages');
+    if (inputValue.trim() && chat && currentUser && firestore) {
+      const messagesColRef = collection(firestore, 'chats', chat.id, 'messages');
       addDocumentNonBlocking(messagesColRef, {
         authorId: currentUser.id,
         content: inputValue.trim(),
@@ -165,13 +165,13 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
     }
   };
 
-  const handleAutomationsUpdate = (channelId: string, updatedAutomations: any) => {
+  const handleAutomationsUpdate = (chatId: string, updatedAutomations: any) => {
     if (!firestore) return;
-    const channelRef = doc(firestore, 'channels', channelId);
-    updateDocumentNonBlocking(channelRef, { automations: updatedAutomations });
+    const chatRef = doc(firestore, 'chats', chatId);
+    updateDocumentNonBlocking(chatRef, { automations: updatedAutomations });
   };
 
-  if (!channel) {
+  if (!chat) {
     return (
       <AnimatePresence>
         <motion.div
@@ -186,7 +186,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
               Welcome to Vibely
             </h2>
             <p className="mt-2 text-muted-foreground">
-              Select a channel to start chatting, or create a new one to begin a
+              Select a chat to start talking, or create a new one to begin a
               new conversation.
             </p>
           </div>
@@ -195,22 +195,22 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
     );
   }
 
-  const isDM = channel.members.length === 2 && channel.isDM;
-  const otherUserIdInDM = isDM ? channel.members.find(id => id !== currentUser?.id) : null;
+  const isDM = chat.members.length === 2 && chat.isDM;
+  const otherUserIdInDM = isDM ? chat.members.find(id => id !== currentUser?.id) : null;
 
   const headerContent = useMemo(() => {
     if (isDM && otherUserIdInDM) {
         return <DMHeaderContent otherUserId={otherUserIdInDM} />
     }
     
-    if (!isDM && channelUsers) {
+    if (!isDM && chatUsers) {
         return (
             <>
-                <GroupAvatar userIds={channel.members} allUsers={channelUsers} />
+                <GroupAvatar userIds={chat.members} allUsers={chatUsers} />
                 <div>
-                    <h2 className="font-headline text-lg font-semibold">{channel.name}</h2>
+                    <h2 className="font-headline text-lg font-semibold">{chat.name}</h2>
                     <p className="text-sm text-muted-foreground">
-                    {channel.description}
+                    {chat.description}
                     </p>
                 </div>
             </>
@@ -226,11 +226,11 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
             </div>
         </div>
     );
-  }, [isDM, otherUserIdInDM, channel, channelUsers, currentUser]);
+  }, [isDM, otherUserIdInDM, chat, chatUsers, currentUser]);
 
   return (
     <motion.div
-      key={channel.id}
+      key={chat.id}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -243,7 +243,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
         {!isDM && (
             <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)}>
             <Settings className="h-5 w-5" />
-            <span className="sr-only">Channel Settings</span>
+            <span className="sr-only">Chat Settings</span>
             </Button>
         )}
       </header>
@@ -251,8 +251,8 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
           <div className="space-y-6 p-4 md:p-8">
-            {messages && channelUsers && messages.map((message) => {
-              const author = channelUsers.find((u) => u.id === message.authorId);
+            {messages && chatUsers && messages.map((message) => {
+              const author = chatUsers.find((u) => u.id === message.authorId);
               if (!author) return null;
               return (
                 <ChatMessage
@@ -304,7 +304,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
         </form>
       </footer>
       {!isDM && <AutomationSettingsDialog 
-        channel={channel}
+        channel={chat}
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         onAutomationsUpdate={handleAutomationsUpdate}

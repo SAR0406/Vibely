@@ -73,6 +73,11 @@
         "avatarUrl": {
           "type": "string",
           "format": "uri"
+        },
+        "searchableTerms": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "A list of lowercase terms for searching, including username and parts of the full name."
         }
       },
       "required": ["id", "userCode", "fullName"]
@@ -95,45 +100,45 @@
         },
         "required": ["id", "fromUserId", "fromUserCode", "fromFullName", "status", "createdAt"]
     },
-    "Channel": {
+    "Chat": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Channel",
+      "title": "Chat",
       "type": "object",
-      "description": "Represents a communication channel, which can be a public group, a private group, or a direct message (DM).",
+      "description": "Represents a communication chat, which can be a public group, a private group, or a direct message (DM).",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the channel."
+          "description": "Unique identifier for the chat."
         },
         "name": {
           "type": "string",
-          "description": "Display name of the channel."
+          "description": "Display name of the chat."
         },
         "description": {
           "type": "string",
-          "description": "A brief description of the channel's purpose."
+          "description": "A brief description of the chat's purpose."
         },
         "isPublic": {
           "type": "boolean",
-          "description": "If true, the channel is discoverable. If false, it's private."
+          "description": "If true, the chat is discoverable. If false, it's private."
         },
         "isDM": {
             "type": "boolean",
-            "description": "If true, this channel is a direct message between two or more users."
+            "description": "If true, this chat is a direct message between two or more users."
         },
         "ownerId": {
           "type": "string",
-          "description": "The UID of the user who owns and manages the channel."
+          "description": "The UID of the user who owns and manages the chat."
         },
         "members": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "An array of user UIDs who are members of this channel. Used for security rules."
+            "description": "An array of user UIDs who are members of this chat. Used for security rules."
         },
         "automations": {
             "type": "array",
             "items": { "type": "object" },
-            "description": "Configuration for any AI automations for this channel."
+            "description": "Configuration for any AI automations for this chat."
         },
         "createdAt": {
           "type": "string",
@@ -150,7 +155,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Message",
       "type": "object",
-      "description": "A single message within a channel.",
+      "description": "A single message within a chat.",
       "properties": {
         "id": { "type": "string" },
         "authorId": {
@@ -191,13 +196,13 @@
         "schema": { "$ref": "#/entities/ChatRequest" },
         "description": "Stores incoming chat requests for a user."
     },
-    "/channels/{channelId}": {
-      "schema": { "$ref": "#/entities/Channel" },
-      "description": "Stores data for all channels. Access is controlled by the `members` array in each document."
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/Chat" },
+      "description": "Stores data for all chats. Access is controlled by the `members` array in each document."
     },
-    "/channels/{channelId}/messages/{messageId}": {
+    "/chats/{chatId}/messages/{messageId}": {
       "schema": { "$ref": "#/entities/Message" },
-      "description": "Stores all messages for a given channel. Access permissions are inherited from the parent channel."
+      "description": "Stores all messages for a given chat. Access permissions are inherited from the parent chat."
     }
   }
 }

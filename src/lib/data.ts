@@ -1,4 +1,4 @@
-import type { User, Channel, Message } from './types';
+import type { User, Chat, Message } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
 const getUserAvatar = (id: string) => 
@@ -17,9 +17,9 @@ export const users: User[] = [
   { id: 'user-7', name: 'Frank', fullName: 'Frank', avatarUrl: getUserAvatar('user-7'), online: true },
 ];
 
-export const channels: Channel[] = [
+export const chats: Chat[] = [
   {
-    id: 'channel-1',
+    id: 'chat-1',
     name: 'Product Team',
     description: 'Discussions about our next big feature.',
     members: ['user-1', 'user-2', 'user-5'],
@@ -27,12 +27,12 @@ export const channels: Channel[] = [
     isDM: false,
     ownerId: 'user-5',
     automations: [
-      { id: 'auto-1', name: 'Welcome Message', description: 'Sends a welcome message to new members.', enabled: true, content: 'Welcome to the Product Team channel, {{user}}!' },
+      { id: 'auto-1', name: 'Welcome Message', description: 'Sends a welcome message to new members.', enabled: true, content: 'Welcome to the Product Team chat, {{user}}!' },
       { id: 'auto-2', name: 'Scheduled Event Invite', description: 'Sends invites for scheduled events.', enabled: false, content: 'Reminder: Weekly sync tomorrow at 10 AM.' },
     ],
   },
   {
-    id: 'channel-2',
+    id: 'chat-2',
     name: 'Random',
     description: 'A place for fun and random thoughts.',
     members: ['user-1', 'user-2', 'user-3', 'user-4', 'user-5', 'user-6', 'user-7'],
@@ -48,7 +48,7 @@ export const channels: Channel[] = [
 export const messages: Message[] = [
   {
     id: 'msg-1',
-    channelId: 'channel-1',
+    chatId: 'chat-1',
     authorId: 'user-1',
     content: 'Hey everyone, let\'s brainstorm ideas for the Q3 roadmap. 🧠',
     timestamp: new Date(Date.now() - 1000 * 60 * 10),
@@ -56,7 +56,7 @@ export const messages: Message[] = [
   },
   {
     id: 'msg-2',
-    channelId: 'channel-1',
+    chatId: 'chat-1',
     authorId: 'user-2',
     content: 'Great idea! I was thinking we could focus on improving user onboarding. What do you think?',
     timestamp: new Date(Date.now() - 1000 * 60 * 8),
@@ -64,7 +64,7 @@ export const messages: Message[] = [
   },
   {
     id: 'msg-3',
-    channelId: 'channel-1',
+    chatId: 'chat-1',
     authorId: 'user-5',
     content: 'Onboarding is a solid plan. I can put together some mockups for a new flow. I\'ll have them ready by EOD.',
     timestamp: new Date(Date.now() - 1000 * 60 * 5),

@@ -31,7 +31,7 @@ import {
   ChannelAssistantOutput,
 } from '@/ai/flows/channel-assistant-suggestions';
 import { UserAvatar } from './user-avatar';
-import { Channel, User } from '@/lib/types';
+import { Chat, User } from '@/lib/types';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, where, doc, orderBy, limit } from 'firebase/firestore';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -42,10 +42,10 @@ const formSchema = z.object({
   members: z.array(z.string()).min(1, 'Select at least one member.'),
 });
 
-type CreateChannelDialogProps = {
+type CreateChatDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onCreateChannel: (channel: Omit<Channel, 'id'>) => void;
+  onCreateChat: (chat: Omit<Chat, 'id'>) => void;
 };
 
 const allAutomationSuggestions = [
@@ -54,11 +54,11 @@ const allAutomationSuggestions = [
     { name: 'Ice Breaker', description: 'Prompts users with an ice breaker question.', defaultContent: 'What\'s your favorite weekend activity?' },
 ];
 
-export function CreateChannelDialog({
+export function CreateChatDialog({
   isOpen,
   onOpenChange,
-  onCreateChannel,
-}: CreateChannelDialogProps) {
+  onCreateChat,
+}: CreateChatDialogProps) {
   const [suggestions, setSuggestions] = useState<ChannelAssistantOutput | null>(null);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [enabledAutomations, setEnabledAutomations] = useState<Record<string, boolean>>({});
@@ -82,9 +82,7 @@ export function CreateChannelDialog({
     if (!firestore || !debouncedSearchTerm) return null;
     return query(
       collection(firestore, 'userDirectory'),
-      orderBy('userCode'),
-      where('userCode', '>=', debouncedSearchTerm),
-      where('userCode', '<=', debouncedSearchTerm + '\uf8ff'),
+      where('searchableTerms', 'array-contains', debouncedSearchTerm.toLowerCase()),
       limit(10)
     );
   }, [firestore, debouncedSearchTerm]);
@@ -118,12 +116,12 @@ export function CreateChannelDialog({
     form.setValue('members', memberIds, { shouldValidate: true });
    }, [selectedUsers, form]);
 
-  const channelName = form.watch('name');
+  const chatName = form.watch('name');
   const memberIds = form.watch('members');
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (!channelName || channelName.length < 3 || memberIds.length <= 2) {
+      if (!chatName || chatName.length < 3 || memberIds.length <= 2) {
         setSuggestions(null);
         return;
       }
@@ -131,7 +129,7 @@ export function CreateChannelDialog({
       try {
         const memberNames = selectedUsers.map(u => u.fullName || 'user');
         const result = await getChannelAssistantSuggestions({
-          channelTitle: channelName,
+          channelTitle: chatName,
           memberList: memberNames,
         });
         setSuggestions(result);
@@ -147,7 +145,7 @@ export function CreateChannelDialog({
 
     const timeoutId = setTimeout(fetchSuggestions, 500);
     return () => clearTimeout(timeoutId);
-  }, [channelName, memberIds.length, selectedUsers]);
+  }, [chatName, memberIds.length, selectedUsers]);
 
   const toggleMember = (member: User) => {
     if (member.id === user?.uid) return; 
@@ -163,15 +161,15 @@ export function CreateChannelDialog({
     const isDM = values.members.length === 2;
 
     if (!isDM && (!values.name || values.name.length < 3)) {
-        form.setError("name", { type: "manual", message: "Channel name must be at least 3 characters for group chats." });
+        form.setError("name", { type: "manual", message: "Group chat name must be at least 3 characters." });
         return;
     }
 
     const otherUserForDM = isDM ? selectedUsers.find(u => u.id !== user.uid) : null;
 
-    const newChannel: Omit<Channel, 'id'> = {
+    const newChat: Omit<Chat, 'id'> = {
         name: isDM ? (otherUserForDM?.fullName || 'Direct Message') : values.name!,
-        description: isDM ? `Direct message with ${otherUserForDM?.fullName || 'user'}` : (suggestions?.descriptionSuggestion || `A channel for ${values.name}`),
+        description: isDM ? `Direct message with ${otherUserForDM?.fullName || 'user'}` : (suggestions?.descriptionSuggestion || `A chat about ${values.name}`),
         members: values.members,
         isPublic: !isDM,
         isDM: isDM,
@@ -186,7 +184,7 @@ export function CreateChannelDialog({
                 content: auto.defaultContent,
             }))
     };
-    onCreateChannel(newChannel);
+    onCreateChat(newChat);
     onOpenChange(false);
   };
 
@@ -199,9 +197,9 @@ export function CreateChannelDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-headline">Create a New Channel or DM</DialogTitle>
+          <DialogTitle className="font-headline">Create a New Chat or DM</DialogTitle>
           <DialogDescription>
-            Select one person for a direct message, or multiple for a group. Add users by their unique user code (e.g. "username#1234").
+            Select one person for a direct message, or multiple for a group chat. Add users by their name or user code.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -212,7 +210,7 @@ export function CreateChannelDialog({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Channel Name (for groups)</FormLabel>
+                    <FormLabel>Group Name (for 3+ people)</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g. Q4-Launch-Plan" {...field} />
                     </FormControl>
@@ -238,7 +236,7 @@ export function CreateChannelDialog({
                 </div>
                 
                 <Input
-                    placeholder="Search by user code (e.g. janedoe#1234)"
+                    placeholder="Search by name or user code..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                 />
@@ -246,7 +244,7 @@ export function CreateChannelDialog({
                 <ScrollArea className="h-48 border rounded-md">
                      <div className="p-2">
                         {isLoadingUsers && <Loader2 className="mx-auto my-4 size-5 animate-spin" />}
-                        {!isLoadingUsers && debouncedSearchTerm && displayedSearchResults.length === 0 && <p className='text-center text-sm text-muted-foreground p-4'>No users found for that code.</p>}
+                        {!isLoadingUsers && debouncedSearchTerm && displayedSearchResults.length === 0 && <p className='text-center text-sm text-muted-foreground p-4'>No users found.</p>}
                         {displayedSearchResults.map(u => (
                             <Button
                                 type="button"
@@ -299,7 +297,7 @@ export function CreateChannelDialog({
                     </div>
                 ) : (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                        {memberIds.length <= 2 ? 'AI suggestions available for groups of 3 or more.' : 'Enter a channel name to get AI suggestions.'}
+                        {memberIds.length <= 2 ? 'AI suggestions available for groups of 3 or more.' : 'Enter a group name to get AI suggestions.'}
                     </p>
                 )}
             </div>

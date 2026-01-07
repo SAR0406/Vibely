@@ -11,18 +11,19 @@ export type User = {
   userCode?: string;
   email?: string;
   lastSeen?: any; // Can be a server timestamp or a Date object
+  searchableTerms?: string[];
 };
 
 export type Message = {
   id: string;
-  channelId?: string; // Made optional as it's part of the subcollection path
+  chatId?: string; // Made optional as it's part of the subcollection path
   authorId: string;
   content: string;
   timestamp: any; // Can be a server timestamp or a Date object
   readStatus: 'read' | null;
 };
 
-export type Channel = {
+export type Chat = {
   id: string;
   name: string;
   description: string;
