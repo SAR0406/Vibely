@@ -19,10 +19,12 @@ export function UserAvatar({
   className,
 }: UserAvatarProps) {
   const fallback = name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase();
+    ? name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+    : '';
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -34,7 +36,7 @@ export function UserAvatar({
                         {src && (
                             <Image
                             src={src}
-                            alt={name}
+                            alt={name || 'User avatar'}
                             width={32}
                             height={32}
                             className="object-cover"
